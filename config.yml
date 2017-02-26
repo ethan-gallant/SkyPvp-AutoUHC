@@ -1,0 +1,148 @@
+######################################################
+#      - SkyPVPUHC [v1.0] Configuration File -       #
+#         Created by xMakerx for Mystic HC           #
+######################################################
+config-version: 'v1.0.0-a'
+server-name: 'UHC-1'
+want-random-seeds: true
+want-lightning-deaths: true
+want-god-apples: false
+want-prefix-messages: false
+
+# These are the materials for variable GUI elements
+kit-selector-item: CHEST
+team-selector-item: NAME_TAG
+
+# These are the minimums for starting a game.
+minimum-solo-game-players: 6
+minimum-team-game-players: 12
+
+database:
+  username: 'root'
+  password: ''
+  database: 'uhc'
+  host: 'localhost'
+  port: '3306'
+  
+seeds:
+  - '-1612847758'
+  - '-2276103805517349348'
+  
+# All timings are in seconds.
+timings:
+  freezeTime: 30
+  gracePeriod: 600
+  startTime: 30
+
+sounds:
+  countdown: CLICK
+  state-update: NOTE_SNARE_DRUM
+  error: CHICKEN_HURT
+
+scenarios:
+  cutclean:
+    name: "&cCutclean"
+    icon: FURNACE
+  timebomb:
+    name: "&cTimebomb"
+    icon: TNT
+  switcharoo:
+    name: "&cSwitch-A-Roo"
+    icon: ENDER_PEARL
+  diamondless:
+    name: "&cDiamond-less"
+    icon: DIAMOND
+  blood-diamonds:
+    name: "&cBlood Diamonds"
+    icon: REDSTONE
+  triple-ores:
+    name: "&cTriple Ores"
+    icon: NETHER_STAR
+  vein-miner:
+    name: "&cVein Miner"
+    icon: IRON_PICKAXE
+  timber:
+    name: "&cTimber"
+    icon: LOG
+  bowless:
+    name: "&cBow-less"
+    icon: BOW
+  fireless:
+    name: "&cFire-less"
+    icon: WATER_BUCKET
+  stackable-speed:
+    name: "&cStackable Speed"
+    icon: POTION:8226
+  random-switch:
+    name: "&cRandom Switch"
+    icon: LEVER
+
+teams:
+  team01:
+    name: "&cRed"
+    icon: INK_SACK:1
+  team02:
+    name: "&2Green"
+    icon: INK_SACK:2
+  team03:
+    name: "&3Blue"
+    icon: INK_SACK:6
+  team04:
+    name: "&aLight Green"
+    icon: INK_SACK:10
+  team05:
+    name: "&6Orange"
+    icon: INK_SACK:14
+  team06:
+    name: "&8Black"
+    icon: INK_SACK
+  team07:
+    name: "&fWhite"
+    icon: INK_SACK:7
+  team08:
+    name: "&eYellow"
+    icon: INK_SACK:11
+
+scoreboards:
+  header: "  &6&lSkyPVP &5UHC"
+  gameScoreboard:
+    - ""
+    - "{timer}"
+    - ""
+    - "{team}"
+    - ""
+    - "Server: &a{server}"
+    - ""
+    - "Your kills: &c{game_kills}"
+    - "Total kills: &c{total_game_kills}"
+  lobbyScoreboard:
+    - ""
+    - "Server: &a{server}"
+    - "Players: {onlinePlayers}/{maxPlayers}"
+    - ""
+    - "{mode}"
+    - "{lobbyTimer}"
+    - ""
+    - "KDR: &c{kdr}"
+    - "Kills: &c{kills}"
+
+messages:
+  prefix: "&8[&6SkyPVPUHC&8]"
+  recipe-disabled: "&cThat crafting recipe has been disabled."
+  player-died: "&3{player} &cwas slain!"
+  eliminated: "&2Good game! You were the &c{standing} &2player alive. You had &3{kills} &cKills &2and your k:d is &c{kdr}&2."
+  player-joined-team: "&c{player} &ejoined {team}&e."
+  not-enough-players: "&eThere are no longer enough players to begin a match. A minimum of &c{numPlayers} &ePlayers is required to start this match."
+  lobby-timer-begun: "&eThe game countdown has begun!"
+  game-will-start: "&eThe game will begin in &a{seconds}&e."
+  kits: "&cKit Selector"
+  teams: "&2Team Selector"
+  team: "Team"
+  not-selected: "Not Selected"
+  solo: "Solo Match"
+  members: "Members"
+  teamRoster: "&8{members}/{maxMembers}"
+  available: "&2&oAvailable"
+  full: "&4&lFULL"
+  not-unlocked: "&cNot unlocked yet!"
+  click-to-select: "&eClick to select!"
