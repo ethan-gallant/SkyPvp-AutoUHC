@@ -59,7 +59,7 @@ public class Database {
 		if(player != null) {
 			Statement statement;
 			try {
-				statement = main.getSettings().getDatabase().getConnection().createStatement();
+				statement = conn.createStatement();
 				statement.execute(player.toMySQLUpdate());
 				main.getOnlinePlayers().remove(id);
 			} catch (SQLException e) {

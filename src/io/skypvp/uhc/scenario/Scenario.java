@@ -5,11 +5,14 @@ import io.skypvp.uhc.player.UHCPlayer;
 import io.skypvp.uhc.scenario.event.UHCScenarioActivateEvent;
 import io.skypvp.uhc.scenario.event.UHCScenarioDeactivateEvent;
 
+import java.util.Date;
+
 public abstract class Scenario implements IScenario {
 	
 	final SkyPVPUHC instance;
 	protected final ScenarioType type;
 	protected boolean active;
+	protected Date startTime;
 	
 	// This is a boolean that says if this Scenario changes player stats or not.
 	protected boolean editsPlayerStats;
@@ -51,6 +54,7 @@ public abstract class Scenario implements IScenario {
 		// Let's register our events.
 		registerEvents();
 		active = true;
+		startTime = new Date();
 		
 		// Let's let the server know that this scenario is now active.
 		UHCScenarioActivateEvent evt = new UHCScenarioActivateEvent(this);
@@ -89,6 +93,10 @@ public abstract class Scenario implements IScenario {
 	
 	public ScenarioType getType() {
 		return this.type;
+	}
+	
+	public Date getStartTime() {
+		return this.startTime;
 	}
 
 }

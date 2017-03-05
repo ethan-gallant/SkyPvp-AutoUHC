@@ -4,6 +4,7 @@ import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.player.UHCPlayer;
+import io.skypvp.uhc.scenario.Scenario;
 import io.skypvp.uhc.timer.MatchTimer;
 import io.skypvp.uhc.timer.TimerUtils;
 

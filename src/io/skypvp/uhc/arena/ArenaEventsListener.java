@@ -167,6 +167,7 @@ public class ArenaEventsListener implements Listener {
 	public void onItemCraft(PrepareItemCraftEvent evt) {
 		ItemStack result = evt.getRecipe().getResult();
 		if(!settings.wantGodApples() && result.getType() == Material.GOLDEN_APPLE && result.getData().getData() == 1) {
+			evt.getInventory().setResult(new ItemStack(Material.AIR));
 			for(HumanEntity ent : evt.getViewers()) {
 				((Player) ent).sendMessage(msgs.getMessage("recipe-disabled"));
 			}

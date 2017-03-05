@@ -2,6 +2,7 @@ package io.skypvp.uhc.scenario;
 
 import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.SkyPVPUHC;
+import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.player.UHCPlayer;
 
 import java.util.ArrayList;
@@ -9,18 +10,16 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
 
-public class Cutclean extends Scenario {
+public class Cutclean extends DropUpdaterScenario {
 	
 	public static HashMap<Material, Material> SMELTED_VERSIONS;
 	
@@ -39,20 +38,18 @@ public class Cutclean extends Scenario {
 		super(main, ScenarioType.CUTCLEAN);
 	}
 	
-	private Collection<ItemStack> handleDrops(Location dropLocation, Collection<ItemStack> drops) {
+	public Collection<ItemStack> handleDrops(Collection<ItemStack> drops) {
 		ArrayList<ItemStack> newDrops = new ArrayList<ItemStack>();
 		for(ItemStack item : drops) {
 			Material smeltedType = Cutclean.SMELTED_VERSIONS.get(item.getType());
 			
 			// If we have a smelted version available, let's change the drops.
 			if(smeltedType != null) {
-				// Let's drop the smelted version instead.
+				// Let's use the smelted version instead.
 				ItemStack newItem = new ItemStack(smeltedType, item.getAmount());
-				dropLocation.getWorld().dropItemNaturally(dropLocation, newItem);
 				newDrops.add(newItem);
 			}else {
-				// No smelted version, just drop it.
-				dropLocation.getWorld().dropItemNaturally(dropLocation, item);
+				// No smelted version, just add it back.
 				newDrops.add(item);
 			}
 		}
@@ -65,19 +62,17 @@ public class Cutclean extends Scenario {
 		Player p = evt.getPlayer();
 		UHCPlayer uhcPlayer = instance.getOnlinePlayers().get(p.getUniqueId());
 		Block b = evt.getBlock();
-		Collection<ItemStack> originalDrops = b.getDrops();
 		
-		if(uhcPlayer != null && isActive() && !evt.isCancelled()) {
-			evt.setCancelled(true);
-			b.getDrops().clear();
-			b.getDrops().addAll(handleDrops(b.getLocation(), originalDrops));
+		if(uhcPlayer != null && isActive()) {
+			ScenarioDrops drops = UHCSystem.getScenarioDrops(b);
+			if(drops == null && evt.isCancelled()) return;
 			
-			// We need to redrop the experience.
-			int expDrop = evt.getExpToDrop();
-			b.setType(Material.AIR);
+			if(drops == null) {
+				drops = new ScenarioDrops(instance, evt);
+				UHCSystem.addScenarioDrop(b, drops);
+			}
 			
-			ExperienceOrb exp = ((ExperienceOrb) b.getWorld().spawn(b.getLocation(), ExperienceOrb.class));
-			exp.setExperience(expDrop);
+			drops.queue(this);
 		}
 	}
 	
@@ -89,7 +84,9 @@ public class Cutclean extends Scenario {
 			List<ItemStack> drops = evt.getDrops();
 			evt.getDrops().clear();
 			
-			evt.getDrops().addAll(handleDrops(dead.getLocation(), drops));
+			for(ItemStack drop : handleDrops(drops)) {
+				dead.getLocation().getWorld().dropItemNaturally(dead.getLocation(), drop);
+			}
 		}
 	}
 
@@ -99,7 +96,7 @@ public class Cutclean extends Scenario {
 		EntityDeathEvent.getHandlerList().unregister(this);
 	}
 	
-	public static HashMap<Material, Material> getSMELTED_VERSIONS() {
+	public static HashMap<Material, Material> getSmeltedVersions() {
 		return Cutclean.SMELTED_VERSIONS;
 	}
 

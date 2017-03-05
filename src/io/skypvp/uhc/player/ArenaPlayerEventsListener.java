@@ -9,7 +9,7 @@ import io.skypvp.uhc.arena.UHCGame;
 import io.skypvp.uhc.arena.UHCGame.GameState;
 import io.skypvp.uhc.player.event.UHCPlayerDamageEvent;
 import io.skypvp.uhc.player.event.UHCPlayerDeathEvent;
-import io.skypvp.uhc.player.event.UHCPlayerKillUHCPlayer;
+import io.skypvp.uhc.player.event.UHCPlayerKillUHCPlayerEvent;
 
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -38,7 +38,7 @@ public class ArenaPlayerEventsListener implements Listener {
 		UHCPlayer uhcPlayer = instance.getOnlinePlayers().get(p.getUniqueId());
 		
 		if(uhcPlayer != null && isPlayerInGame(uhcPlayer)) {
-			pMgr.callEvent(new UHCPlayerDeathEvent(uhcPlayer));
+			pMgr.callEvent(new UHCPlayerDeathEvent(uhcPlayer, evt));
 		}
 	}
 	
@@ -68,7 +68,7 @@ public class ArenaPlayerEventsListener implements Listener {
 			
 			if(uhcKiller != null && uhcKiller != null && isPlayerInGame(uhcKiller) && isPlayerInGame(uhcKilled)) {
 				if(killed.getHealth() - evt.getDamage() <= 0 && !evt.isCancelled()) {
-					pMgr.callEvent(new UHCPlayerKillUHCPlayer(uhcKiller, uhcKilled));
+					pMgr.callEvent(new UHCPlayerKillUHCPlayerEvent(uhcKiller, uhcKilled));
 				}
 			}
 		}

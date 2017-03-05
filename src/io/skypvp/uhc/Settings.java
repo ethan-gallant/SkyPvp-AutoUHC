@@ -1,7 +1,7 @@
 package io.skypvp.uhc;
 
-import io.skypvp.uhc.arena.Scenario;
 import io.skypvp.uhc.arena.Team;
+import io.skypvp.uhc.scenario.ScenarioType;
 
 import java.io.File;
 import java.sql.SQLException;
@@ -33,6 +33,7 @@ public class Settings {
 	private int gracePeriodTime;
 	private int freezeTime;
 	private int startTime;
+	private int timebombExplodeTime;
 	private int minSoloGamePlayers;
 	private int minTeamGamePlayers;
 	private Sound countdown;
@@ -57,6 +58,7 @@ public class Settings {
 		this.gracePeriodTime = 0;
 		this.freezeTime = 0;
 		this.startTime = 0;
+		this.timebombExplodeTime = 0;
 		this.minSoloGamePlayers = 0;
 		this.minTeamGamePlayers = 0;
 		this.scoreboardHeader = "";
@@ -148,6 +150,7 @@ public class Settings {
 			freezeTime = timings.getInt("freezeTime");
 			gracePeriodTime = timings.getInt("gracePeriod");
 			startTime = timings.getInt("startTime");
+			timebombExplodeTime = timings.getInt("timebombExplodeTime");
 			
 			// Let's load up the sounds.
 			ConfigurationSection sounds = config.getConfigurationSection("sounds");
@@ -166,8 +169,8 @@ public class Settings {
 			
 			// Let's load up the scenario data.
 			ConfigurationSection scenarioSection = config.getConfigurationSection("scenarios");
-			HashMap<String, Scenario> scenarios = new HashMap<String, Scenario>();
-			for(Scenario s : Scenario.values()) scenarios.put(s.getConfigKey(), s);
+			HashMap<String, ScenarioType> scenarios = new HashMap<String, ScenarioType>();
+			for(ScenarioType s : ScenarioType.values()) scenarios.put(s.getConfigKey(), s);
 			
 			for(String key : scenarioSection.getKeys(false)) {
 				ConfigurationSection scenSection = scenarioSection.getConfigurationSection(key);
@@ -175,6 +178,7 @@ public class Settings {
 				ItemStack icon = handleIconString(scenSection.getString("icon"));
 				scenarios.get(key).setName(name);
 				scenarios.get(key).setIcon(icon);
+				scenarios.get(key).setSettingsSection(scenSection);
 			}
 
 			// Let's load the database settings.
@@ -245,6 +249,10 @@ public class Settings {
 	
 	public int getStartTime() {
 		return this.startTime;
+	}
+	
+	public int getTimebombExplodeTime() {
+		return this.timebombExplodeTime;
 	}
 	
 	public Sound getCountdownSound() {

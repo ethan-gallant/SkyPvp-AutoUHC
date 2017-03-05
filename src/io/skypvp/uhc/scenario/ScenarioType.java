@@ -1,5 +1,6 @@
 package io.skypvp.uhc.scenario;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
 public enum ScenarioType {
@@ -7,23 +8,26 @@ public enum ScenarioType {
 	TIMEBOMB("timebomb"),
 	SWITCHAROO("switcharoo"),
 	DIAMONDLESS("diamondless"),
-	BLOOD_DIAMONDS("blood-diamonds"),
 	TRIPLE_ORES("triple-ores"),
-	VEIN_MINER("vein-miner"),
 	TIMBER("timber"),
-	BOWLESS("bowless"),
 	FIRELESS("fireless"),
-	STACKABLE_SPEED("stackable-speed"),
-	RANDOM_SWITCH("random-switch"),
 	DOUBLE_HEALTH("double-health"),
-	NO_FALL("no-fall");
+	NO_FALL("no-fall"),
+	INCREASING_SPEED("increasing-speed"),
+	ENCHANTED_DEATH("enchanted-death"),
+	ONE_HEAL("one-heal"),
+	DOUBLE_OR_NOTHING("double-or-nothing");
 	
 	private final String configKey;
 	private String name;
 	private ItemStack icon;
+	private ConfigurationSection settingsSection;
 	
 	private ScenarioType(String configKey) {
 		this.configKey = configKey;
+		this.name = null;
+		this.icon = null;
+		this.settingsSection = null;
 	}
 	
 	public void setName(String name) {
@@ -40,6 +44,14 @@ public enum ScenarioType {
 	
 	public ItemStack getIcon() {
 		return this.icon.clone();
+	}
+	
+	public void setSettingsSection(ConfigurationSection section) {
+		this.settingsSection = section;
+	}
+	
+	public ConfigurationSection getSettingsSection() {
+		return this.settingsSection;
 	}
 	
 	public String getConfigKey() {

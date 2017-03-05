@@ -12,7 +12,12 @@ import org.bukkit.entity.Player;
 
 public class UHCPlayer {
 	
+	public enum PlayerState {
+		ACTIVE, FROZEN
+	}
+	
 	final UUID uuid;
+	private PlayerState state;
 	
 	// These are database statistics.
 	private int gamesPlayed;
@@ -28,6 +33,7 @@ public class UHCPlayer {
 	
 	public UHCPlayer(UUID id, int gamesPlayed, int gamesWon, int kills, int deaths) {
 		this.uuid = id;
+		this.state = PlayerState.ACTIVE;
 		this.gamesPlayed = gamesPlayed;
 		this.gamesWon = gamesWon;
 		this.kills = kills;
@@ -36,6 +42,14 @@ public class UHCPlayer {
 		this.team = null;
 		this.scoreboard = null;
 		this.inGame = true;
+	}
+	
+	public void setState(PlayerState state) {
+		this.state = state;
+	}
+	
+	public PlayerState getState() {
+		return this.state;
 	}
 	
 	public void setScoreboard(UHCScoreboard board) {

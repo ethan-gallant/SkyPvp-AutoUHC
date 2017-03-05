@@ -5,6 +5,7 @@ import io.skypvp.uhc.arena.UHCGame;
 import io.skypvp.uhc.arena.UHCGame.GameState;
 import io.skypvp.uhc.menu.Menu;
 import io.skypvp.uhc.player.UHCPlayer;
+import io.skypvp.uhc.scenario.ScenarioDrops;
 import io.skypvp.uhc.timer.MatchTimer;
 import io.skypvp.uhc.timer.TimerUtils;
 
@@ -12,6 +13,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+
+import net.minecraft.util.io.netty.util.internal.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -23,14 +26,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scoreboard.DisplaySlot;
 
-import net.minecraft.util.io.netty.util.internal.ThreadLocalRandom;
-
 public class UHCSystem {
 	
 	private static SkyPVPUHC main;
 	private static HashSet<Team> teams = new HashSet<Team>();
 	private static HashSet<ItemStack> restrictedItems = new HashSet<ItemStack>();
 	private static MatchTimer lobbyTimer;
+	private static HashMap<Block, ScenarioDrops> scenarioDrops = new HashMap<Block, ScenarioDrops>();
 	
 	public static void setLobbyTimer(SkyPVPUHC instance) {
 		UHCSystem.main = instance;
@@ -79,6 +81,18 @@ public class UHCSystem {
 	
 	public static HashSet<ItemStack> getRestrictedItems() {
 		return restrictedItems;
+	}
+	
+	public static void addScenarioDrop(Block block, ScenarioDrops drop) {
+		scenarioDrops.put(block, drop);
+	}
+	
+	public static ScenarioDrops getScenarioDrops(Block block) {
+		return scenarioDrops.get(block);
+	}
+	
+	public static HashMap<Block, ScenarioDrops> getScenarioDrops() {
+		return scenarioDrops;
 	}
 	
 	/**
@@ -163,34 +177,6 @@ public class UHCSystem {
 		for(UHCPlayer p : main.getOnlinePlayers().values()) {
 			p.getBukkitPlayer().sendMessage(msg);
 			p.getBukkitPlayer().playSound(p.getBukkitPlayer().getLocation(), sound, 1F, 1F);
-		}
-	}
-	
-	public static boolean isOre(Material type) {
-		return Arrays.asList(Material.DIAMOND_ORE, 
-			Material.IRON_ORE, 
-			Material.COAL_ORE, 
-			Material.EMERALD_ORE,
-			Material.LAPIS_ORE,
-			Material.GOLD_ORE,
-		Material.REDSTONE_ORE).contains(type);
-	}
-	
-	public static ItemStack getSmeltedItemVersion(ItemStack rawItem) {
-		HashMap<Material, Material> dict = new HashMap<Material, Material>();
-		dict.put(Material.IRON_ORE, Material.IRON_INGOT);
-		dict.put(Material.GOLD_ORE, Material.GOLD_INGOT);
-		dict.put(Material.RAW_BEEF, Material.COOKED_BEEF);
-		dict.put(Material.RAW_CHICKEN, Material.COOKED_CHICKEN);
-		dict.put(Material.RAW_FISH, Material.COOKED_FISH);
-		dict.put(Material.POTATO_ITEM, Material.BAKED_POTATO);
-		dict.put(Material.PORK, Material.GRILLED_PORK);
-		
-		Material cookedType = dict.get(rawItem.getType());
-		if(cookedType == null) {
-			return rawItem;
-		}else {
-			return new ItemStack(cookedType, rawItem.getAmount());
 		}
 	}
 	
