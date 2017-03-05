@@ -10,8 +10,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class MatchTimer extends BukkitRunnable {
 	
 	final SkyPVPUHC main;
-	private final int initialMinutes;
-	private final int initialSeconds;
+	private int initialMinutes;
+	private int initialSeconds;
 	private String name;
 	private int minutes;
 	private int seconds;
@@ -36,7 +36,7 @@ public class MatchTimer extends BukkitRunnable {
 			minutes--;
 			seconds = 59;
 		}else {
-			if((seconds - 1) > 0) {
+			if((seconds - 1) > 0 || (seconds - 1) == 0 && minutes > 0) {
 				seconds--;
 			}else if((seconds - 1) == 0 && minutes == 0) {
 				seconds--;
@@ -88,6 +88,8 @@ public class MatchTimer extends BukkitRunnable {
 		setName(name);
 		setMinutes(minutes);
 		setSeconds(seconds);
+		initialMinutes = minutes;
+		initialSeconds = seconds;
 	}
 	
 	public void setName(String newName) {
@@ -122,8 +124,8 @@ public class MatchTimer extends BukkitRunnable {
 	
 	public String toString() {
 		if(initialMinutes != 0) {
-			String mins = (minutes > 10) ? String.valueOf(minutes) : String.format("0%d", minutes);
-			String secs = (seconds > 10) ? String.valueOf(seconds) : String.format("0%d", seconds);
+			String mins = (minutes >= 10) ? String.valueOf(minutes) : String.format("0%d", minutes);
+			String secs = (seconds >= 10) ? String.valueOf(seconds) : String.format("0%d", seconds);
 			return mins.concat(":").concat(secs);
 		}else {
 			return String.format("%ds", seconds);

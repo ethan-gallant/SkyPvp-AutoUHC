@@ -30,7 +30,7 @@ public class Settings {
 	private boolean wantPrefixMsgs;
 	private ItemStack kitSelector;
 	private ItemStack teamSelector;
-	private int gracePeriodTime;
+	private int borderShrinkEveryTime;
 	private int freezeTime;
 	private int startTime;
 	private int timebombExplodeTime;
@@ -55,7 +55,7 @@ public class Settings {
 		this.wantPrefixMsgs = true;
 		this.kitSelector = null;
 		this.teamSelector = null;
-		this.gracePeriodTime = 0;
+		this.borderShrinkEveryTime = 0;
 		this.freezeTime = 0;
 		this.startTime = 0;
 		this.timebombExplodeTime = 0;
@@ -148,7 +148,7 @@ public class Settings {
 			// Let's load up the timings.
 			ConfigurationSection timings = config.getConfigurationSection("timings");
 			freezeTime = timings.getInt("freezeTime");
-			gracePeriodTime = timings.getInt("gracePeriod");
+			borderShrinkEveryTime = timings.getInt("borderShrinkEveryTime");
 			startTime = timings.getInt("startTime");
 			timebombExplodeTime = timings.getInt("timebombExplodeTime");
 			
@@ -180,6 +180,8 @@ public class Settings {
 				scenarios.get(key).setIcon(icon);
 				scenarios.get(key).setSettingsSection(scenSection);
 			}
+			
+			Globals.MAX_MEMBERS_PER_TEAM = (int) Math.ceil(main.getProfile().getMaxPlayers() / UHCSystem.getTeams().size());
 
 			// Let's load the database settings.
 			ConfigurationSection db = config.getConfigurationSection("database");
@@ -243,8 +245,8 @@ public class Settings {
 		return this.freezeTime;
 	}
 	
-	public int getGracePeriodTime() {
-		return this.gracePeriodTime;
+	public int getBorderShrinkEveryTime() {
+		return this.borderShrinkEveryTime;
 	}
 	
 	public int getStartTime() {

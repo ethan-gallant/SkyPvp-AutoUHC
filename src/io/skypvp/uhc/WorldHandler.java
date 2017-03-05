@@ -1,5 +1,6 @@
 package io.skypvp.uhc;
 
+import io.skypvp.uhc.arena.Profile;
 import io.skypvp.uhc.arena.UHCGame.GameState;
 
 import java.io.BufferedReader;
@@ -68,7 +69,7 @@ public class WorldHandler {
 			String seed = br.readLine();
 			if(seeds.contains(seed)) {
 				return seed;
-			}else if(!seed.isEmpty()) {
+			}else if(seed == null || !seed.isEmpty()) {
 				main.sendConsoleMessage(ChatColor.DARK_RED + "Obtained a last seed that is not listed in the config.");
 				return "";
 			}
@@ -106,9 +107,12 @@ public class WorldHandler {
 			gameWorld = worldMgr.getMVWorld(Globals.GAME_WORLD_NAME);
 			storeLastSeed();
 			
+			Profile profile = main.getProfile();
+			int initMapSize = profile.getInitialMapSize();
+			
 			// Let's setup the world border.
 			World cbWorld = gameWorld.getCBWorld();
-			Config.setBorder(Globals.GAME_WORLD_NAME, 500, 500, cbWorld.getSpawnLocation().getX(), cbWorld.getSpawnLocation().getZ(), false);
+			Config.setBorder(Globals.GAME_WORLD_NAME, initMapSize, initMapSize, cbWorld.getSpawnLocation().getX(), cbWorld.getSpawnLocation().getZ(), false);
 			BorderData border = worldBorder.getWorldBorder(Globals.GAME_WORLD_NAME);
 			generateBlockBorder(border);
 			

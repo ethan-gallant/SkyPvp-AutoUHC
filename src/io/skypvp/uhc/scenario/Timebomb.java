@@ -1,8 +1,8 @@
 package io.skypvp.uhc.scenario;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -75,7 +75,8 @@ public class Timebomb extends Scenario {
 	public void onPlayerDeath(UHCPlayerDeathEvent evt) {
 		UHCPlayer player = evt.getPlayer();
 		Location deathLocation = player.getBukkitPlayer().getLocation();
-		List<ItemStack> drops = evt.getDeathEvent().getDrops();
+		ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
+		drops.addAll(evt.getDeathEvent().getDrops());
 		
 		// Okay, let's clear the drops from the event and put them in a chest.
 		evt.getDeathEvent().getDrops().clear();

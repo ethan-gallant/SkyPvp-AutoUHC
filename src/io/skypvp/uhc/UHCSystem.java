@@ -14,8 +14,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import net.minecraft.server.v1_7_R4.PacketPlayOutScoreboardTeam;
+import net.minecraft.server.v1_7_R4.Scoreboard;
+import net.minecraft.server.v1_7_R4.ScoreboardTeam;
 import net.minecraft.util.io.netty.util.internal.ThreadLocalRandom;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -24,7 +28,11 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.DisplaySlot;
+
+import org.bukkit.craftbukkit.v1_7_R4.entity.CraftPlayer;
 
 public class UHCSystem {
 	
@@ -33,6 +41,26 @@ public class UHCSystem {
 	private static HashSet<ItemStack> restrictedItems = new HashSet<ItemStack>();
 	private static MatchTimer lobbyTimer;
 	private static HashMap<Block, ScenarioDrops> scenarioDrops = new HashMap<Block, ScenarioDrops>();
+	public static ScoreboardTeam GHOST_TEAM;
+	
+	static {
+		GHOST_TEAM = new ScoreboardTeam(new Scoreboard(), "spectators");
+		GHOST_TEAM.setCanSeeFriendlyInvisibles(true);
+	}
+	
+	public static void toggleGhost(Player player) {
+		PacketPlayOutScoreboardTeam packet = new PacketPlayOutScoreboardTeam();
+		if(player.hasPotionEffect(PotionEffectType.INVISIBILITY)){
+			packet = new PacketPlayOutScoreboardTeam(GHOST_TEAM, Arrays.asList(player.getName()), 4);
+			player.removePotionEffect(PotionEffectType.INVISIBILITY);
+		} else {
+			packet = new PacketPlayOutScoreboardTeam(GHOST_TEAM, Arrays.asList(player.getName()), 3);
+			player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 15));
+		}
+		for(Player players : Bukkit.getOnlinePlayers()) {
+			((CraftPlayer) players).getHandle().playerConnection.sendPacket(packet);
+		}
+	}
 	
 	public static void setLobbyTimer(SkyPVPUHC instance) {
 		UHCSystem.main = instance;
@@ -52,7 +80,7 @@ public class UHCSystem {
 			x = ThreadLocalRandom.current().nextDouble(minX, maxX);
 			z = ThreadLocalRandom.current().nextDouble(minZ, maxZ);
 			highestBlock = world.getHighestBlockAt((int) x, (int) z);
-		} while(Arrays.asList(Material.LAVA, Material.WATER, Material.CACTUS, Material.WEB).contains(highestBlock.getType()));
+		} while(Arrays.asList(Material.LAVA, Material.STATIONARY_LAVA, Material.WATER, Material.STATIONARY_WATER, Material.CACTUS, Material.WEB).contains(highestBlock.getType()));
 		
 		return new Location(world, x, highestBlock.getLocation().getY() + 1.0, z);
 	}
@@ -177,6 +205,13 @@ public class UHCSystem {
 		for(UHCPlayer p : main.getOnlinePlayers().values()) {
 			p.getBukkitPlayer().sendMessage(msg);
 			p.getBukkitPlayer().playSound(p.getBukkitPlayer().getLocation(), sound, 1F, 1F);
+		}
+	}
+	
+	public static void broadcastMessageAndSound(String msg, Sound sound, float volume) {
+		for(UHCPlayer p : main.getOnlinePlayers().values()) {
+			p.getBukkitPlayer().sendMessage(msg);
+			p.getBukkitPlayer().playSound(p.getBukkitPlayer().getLocation(), sound, volume, volume);
 		}
 	}
 	

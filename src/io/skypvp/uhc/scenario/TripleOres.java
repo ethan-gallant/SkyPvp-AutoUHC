@@ -4,7 +4,6 @@ import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCSystem;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 
 import org.bukkit.Material;
@@ -18,6 +17,7 @@ public class TripleOres extends DropUpdaterScenario {
 	public static ArrayList<Material> ORES;
 	
 	static {
+		ORES = new ArrayList<Material>();
 		ORES.add(Material.COAL_ORE);
 		ORES.add(Material.REDSTONE_ORE);
 		ORES.add(Material.EMERALD_ORE);
@@ -57,7 +57,7 @@ public class TripleOres extends DropUpdaterScenario {
 		return TripleOres.ORES;
 	}
 
-	public Collection<ItemStack> handleDrops(Collection<ItemStack> drops) {
+	public ArrayList<ItemStack> handleDrops(ArrayList<ItemStack> drops) {
 		Iterator<ItemStack> iterator = drops.iterator();
 		while(iterator.hasNext()) {
 			ItemStack drop = iterator.next();

@@ -4,7 +4,6 @@ import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCSystem;
 
 import java.util.ArrayList;
-import java.util.Collection;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -23,10 +22,10 @@ public class ScenarioDrops {
 	private final Block block;
 	
 	// The original drops.
-	private final Collection<ItemStack> originalDrops;
+	private final ArrayList<ItemStack> originalDrops;
 	
 	// The drops that will be dropped.
-	private Collection<ItemStack> drops;
+	private ArrayList<ItemStack> drops;
 	
 	// Scenarios that have queued to update.
 	private ArrayList<DropUpdaterScenario> queuedDropUpdates;
@@ -35,9 +34,15 @@ public class ScenarioDrops {
 		this.instance = main;
 		this.breakEvt = breakEvt;
 		this.block = breakEvt.getBlock();
-		this.originalDrops = block.getDrops();
-		this.drops = originalDrops;
+		this.originalDrops = new ArrayList<ItemStack>();
+		this.originalDrops.addAll(breakEvt.getBlock().getDrops());
+		this.drops = new ArrayList<ItemStack>();
+		this.drops.addAll(originalDrops);
 		this.queuedDropUpdates = new ArrayList<DropUpdaterScenario>();
+		
+		for(int i = 0; i < DropUpdaterScenario.DROP_UPDATE_ORDER.size(); i++) {
+			queuedDropUpdates.add(null);
+		}
 		
 		// Let's clear the drops and schedule the task.
 		breakEvt.setCancelled(true);
@@ -54,7 +59,9 @@ public class ScenarioDrops {
 	
 	public void dropItems() {
 		for(DropUpdaterScenario scenario : queuedDropUpdates) {
-			drops = scenario.handleDrops(drops);
+			if(scenario != null) {
+				drops = scenario.handleDrops(drops);
+			}
 		}
 		
 		// Set the type back to AIR.
@@ -100,15 +107,15 @@ public class ScenarioDrops {
 		return this.block;
 	}
 	
-	public Collection<ItemStack> getOriginalDrops() {
+	public ArrayList<ItemStack> getOriginalDrops() {
 		return this.originalDrops;
 	}
 	
-	public void setDrops(Collection<ItemStack> drops) {
+	public void setDrops(ArrayList<ItemStack> drops) {
 		this.drops = drops;
 	}
 	
-	public Collection<ItemStack> getDrops() {
+	public ArrayList<ItemStack> getDrops() {
 		return this.drops;
 	}
 }

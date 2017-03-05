@@ -15,6 +15,7 @@ public class Timber extends Scenario {
 	public static ArrayList<Material> TREE_BLOCKS;
 	
 	static {
+		TREE_BLOCKS = new ArrayList<Material>();
 		TREE_BLOCKS.add(Material.LOG);
 		TREE_BLOCKS.add(Material.LOG_2);
 		TREE_BLOCKS.add(Material.LEAVES);

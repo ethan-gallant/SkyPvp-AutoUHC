@@ -6,9 +6,7 @@ import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.player.UHCPlayer;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -38,7 +36,7 @@ public class Cutclean extends DropUpdaterScenario {
 		super(main, ScenarioType.CUTCLEAN);
 	}
 	
-	public Collection<ItemStack> handleDrops(Collection<ItemStack> drops) {
+	public ArrayList<ItemStack> handleDrops(ArrayList<ItemStack> drops) {
 		ArrayList<ItemStack> newDrops = new ArrayList<ItemStack>();
 		for(ItemStack item : drops) {
 			Material smeltedType = Cutclean.SMELTED_VERSIONS.get(item.getType());
@@ -81,7 +79,8 @@ public class Cutclean extends DropUpdaterScenario {
 		Entity dead = evt.getEntity();
 		
 		if(isActive() && dead.getWorld().getName().equalsIgnoreCase(Globals.GAME_WORLD_NAME)) {
-			List<ItemStack> drops = evt.getDrops();
+			ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
+			drops.addAll(evt.getDrops());
 			evt.getDrops().clear();
 			
 			for(ItemStack drop : handleDrops(drops)) {

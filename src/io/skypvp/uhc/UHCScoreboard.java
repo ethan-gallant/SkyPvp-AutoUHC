@@ -37,6 +37,13 @@ public class UHCScoreboard {
 		this.slot = slot;
 	}
 	
+	private String getTimerName() {
+		if(main.getGame().getState() != GameState.STARTING) {
+			return main.getGame().getTimer().getName();
+		}
+		return "";
+	}
+	
 	private String handleTimerString(MatchTimer timer) {
 		String clockTime = timer.toString();
 		if(timer == UHCSystem.getLobbyTimer()) {
@@ -52,7 +59,11 @@ public class UHCScoreboard {
 			clockTime = ChatColor.GREEN + clockTime;
 		}
 		
-		return timer.getName().concat(": ").concat(clockTime);
+		if(timer == UHCSystem.getLobbyTimer()) {
+			return timer.getName().concat(": ").concat(clockTime);
+		}else {
+			return clockTime;
+		}
 	}
 
 	public void generate(UHCPlayer player) {
@@ -66,10 +77,14 @@ public class UHCScoreboard {
 				boolean isModeLine = line.indexOf("{mode}") != -1;
 				line = line.replaceAll("\\{server\\}", main.getSettings().getServerName());
 				line = line.replaceAll("\\{onlinePlayers\\}", String.valueOf(main.getServer().getOnlinePlayers().size()));
-				line = line.replaceAll("\\{maxPlayers\\}", String.valueOf(main.getServer().getMaxPlayers()));
+				line = line.replaceAll("\\{maxPlayers\\}", String.valueOf(main.getProfile().getMaxPlayers()));
 				line = line.replaceAll("\\{kdr\\}", String.valueOf(player.getKillDeathRatio()));
 				line = line.replaceAll("\\{kills\\}", String.valueOf(player.getKills()));
 				line = line.replaceAll("\\{deaths\\}", String.valueOf(player.getDeaths()));
+				line = line.replaceAll("\\{gameKills\\}", String.valueOf(player.getGameKills()));
+				line = line.replaceAll("\\{tGameKills\\}", String.valueOf(getGameKills(player)));
+				line = line.replaceAll("\\{timerName\\}", String.valueOf(getTimerName()));
+				line = line.replaceAll("\\{timer\\}", handleTimerString(main.getGame().getTimer()));
 				line = line.replaceAll("\\{lobbyTimer\\}", handleTimerString(UHCSystem.getLobbyTimer()));
 				line = line.replaceAll("\\{mode\\}", (main.getGame().isTeamMatch()) ? main.getMessages().getRawMessage("team") : main.getMessages().getRawMessage("solo"));
 				addLine(ChatColor.translateAlternateColorCodes('&', line));
@@ -86,6 +101,17 @@ public class UHCScoreboard {
 				}
 			}
 		}
+	}
+	
+	public int getGameKills(UHCPlayer player) {
+		if(!player.isInGame()) return 0;
+		int kills = 0;
+		
+		for(UHCPlayer uhcPlayer : main.getOnlinePlayers().values()) {
+			kills += uhcPlayer.getGameKills();
+		}
+		
+		return kills;
 	}
 	
 	public void addLine(final String line) {
@@ -135,7 +161,7 @@ public class UHCScoreboard {
 		obj.setDisplayName(ChatColor.translateAlternateColorCodes('&', title));
 		obj.setDisplaySlot(slot);
 		organizeLines();
-		player.setScoreboard(scoreboard);
+		if(player != null) player.setScoreboard(scoreboard);
 	}
 	
 	public String getTitle() {

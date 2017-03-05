@@ -4,7 +4,7 @@ import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.player.UHCPlayer;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import net.minecraft.util.io.netty.util.internal.ThreadLocalRandom;
@@ -22,7 +22,7 @@ public class DoubleOrNothing extends DropUpdaterScenario {
 	}
 
 	@Override
-	public Collection<ItemStack> handleDrops(Collection<ItemStack> drops) {
+	public ArrayList<ItemStack> handleDrops(ArrayList<ItemStack> drops) {
 		int rndmNum = ThreadLocalRandom.current().nextInt(0, 101);
 		Iterator<ItemStack> iterator = drops.iterator();
 		while(iterator.hasNext()) {

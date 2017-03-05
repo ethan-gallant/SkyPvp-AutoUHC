@@ -2,22 +2,30 @@ package io.skypvp.uhc.arena;
 
 import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.SkyPVPUHC;
+import io.skypvp.uhc.UHCScoreboard;
 import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.player.UHCPlayer;
+import io.skypvp.uhc.player.UHCPlayer.PlayerState;
 import io.skypvp.uhc.scenario.Scenario;
+import io.skypvp.uhc.scenario.ScenarioType;
 import io.skypvp.uhc.timer.MatchTimer;
 import io.skypvp.uhc.timer.TimerUtils;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
+import net.md_5.bungee.api.ChatColor;
+
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.DisplaySlot;
+import org.bukkit.util.Vector;
 
 import com.wimbli.WorldBorder.BorderData;
-
-import net.md_5.bungee.api.ChatColor;
 
 public class UHCGame {
 	
@@ -56,8 +64,64 @@ public class UHCGame {
 	 */
 	
 	public void startMatch() {
+		setState(GameState.PREPARING);
 		main.getWorldHandler().getGameWorld().getCBWorld().setTime(500L);
+		
+		// Let's handle the players.
+		for(UHCPlayer player : main.getOnlinePlayers().values()) {
+			player.setState(PlayerState.FROZEN);
+			player.setInGame(true);
+			player.getBukkitPlayer().getInventory().clear();
+			
+			if(player.getTeam() != null) {
+				player.getTeam().giveArmor(player);
+			}
+			
+			UHCScoreboard scoreboard = new UHCScoreboard(main, "gameScoreboard", DisplaySlot.SIDEBAR);
+			scoreboard.generate(player);
+			player.setScoreboard(scoreboard);
+		}
+		
+		// Let's load our scenarios.
+		scenarios.clear();
+		
+		for(ScenarioType type : main.getProfile().getScenarios()) {
+			Class<? extends Scenario> clazz = null;
+			try {
+				clazz = ScenarioType.getScenarioClassByType(type);
+				Object[] constrNeeds = {main};
+				Scenario scenario = clazz.getDeclaredConstructor(SkyPVPUHC.class).newInstance(constrNeeds);
+				scenarios.add(scenario);
+				main.sendConsoleMessage(ChatColor.DARK_GREEN + String.format("Successfully created new %s instance.", scenario.getType().name()));
+			} catch (IllegalArgumentException e) {
+				main.sendConsoleMessage(main.getMessages().color(
+					String.format("&cERROR: &4Could not instantiate new Scenario from type. Error: %s", 
+				e.getMessage())));
+			} catch (InstantiationException e) {
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				e.printStackTrace();
+			} catch (NoSuchMethodException e) {
+				e.printStackTrace();
+			} catch (SecurityException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		spawnPlayers();
+		
+		int[] timings = TimerUtils.convertToMinutesAndSeconds(main.getSettings().getFreezeTime());
+		timer.set("Preparing", timings[0], timings[1]);
+		
+		new BukkitRunnable() {
+			
+			public void run() {
+				timer.runTaskTimer(main, 0L, 20L);
+			}
+			
+		}.runTaskLater(main, 40L);
 	}
 	
 	public void cancelStart() {
@@ -90,14 +154,16 @@ public class UHCGame {
 				
 				Location spawn = UHCSystem.getRandomSpawnPoint(minX, maxX, minZ, maxZ);
 				UHCPlayer[] members = team.getMembers().toArray(new UHCPlayer[team.getMembers().size()]);
-				members[0].getBukkitPlayer().teleport(spawn);
-				
-				for(int i = 1; i < members.length; i++) {
-					minX = spawn.getX() - 5;
-					maxX = spawn.getX() + 5;
-					minZ = spawn.getZ() - 5;
-					maxZ = spawn.getZ() + 5;
-					members[i].getBukkitPlayer().teleport(UHCSystem.getRandomSpawnPoint(minX, maxX, minZ, maxZ));
+				if(members.length > 0) {
+					members[0].getBukkitPlayer().teleport(spawn);
+					
+					for(int i = 1; i < members.length; i++) {
+						minX = spawn.getX() - 5;
+						maxX = spawn.getX() + 5;
+						minZ = spawn.getZ() - 5;
+						maxZ = spawn.getZ() + 5;
+						members[i].getBukkitPlayer().teleport(UHCSystem.getRandomSpawnPoint(minX, maxX, minZ, maxZ));
+					}
 				}
 			}
 			
@@ -131,10 +197,44 @@ public class UHCGame {
 	public void handlePlayerExit(UHCPlayer player) {
 		if(isTeamMatch) {
 			Team pTeam = player.getTeam();
-			pTeam.removeMember(player);
+			if(pTeam != null) {
+				pTeam.removeMember(player);
+				
+				if(pTeam.getMembers().size() == 0) {
+					
+				}
+			}
 		}
 		
+		enterSpectate(player);
+		
 		player.setInGame(false);
+	}
+	
+	public void enterSpectate(final UHCPlayer player) {
+		for(UHCPlayer uhcPlayer : main.getOnlinePlayers().values()) {
+			if(uhcPlayer.getState() == PlayerState.ACTIVE) {
+				uhcPlayer.getBukkitPlayer().hidePlayer(player.getBukkitPlayer());
+				player.getBukkitPlayer().showPlayer(uhcPlayer.getBukkitPlayer());
+			}else if(uhcPlayer.getState() == PlayerState.SPECTATING) {
+				uhcPlayer.getBukkitPlayer().showPlayer(player.getBukkitPlayer());
+				player.getBukkitPlayer().showPlayer(uhcPlayer.getBukkitPlayer());
+			}
+		}
+		
+		player.setState(PlayerState.SPECTATING);
+		player.getBukkitPlayer().setVelocity(new Vector(0, 1, 0));
+		player.getBukkitPlayer().setAllowFlight(true);
+		UHCSystem.toggleGhost(player.getBukkitPlayer());
+		
+		new BukkitRunnable() {
+			
+			public void run() {
+				player.getBukkitPlayer().setFlying(true);
+				player.getBukkitPlayer().setGameMode(GameMode.CREATIVE);
+			}
+			
+		}.runTaskLater(main, 10L);
 	}
 	
 	/**
@@ -180,6 +280,26 @@ public class UHCGame {
 			UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("lobby-timer-begun"), main.getSettings().getStateUpdateSound());
 			UHCSystem.getLobbyTimer().reset();
 			UHCSystem.getLobbyTimer().runTaskTimer(main, 0L, 20L);
+		}else if(newState == GameState.PREPARING) {
+			UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("welcome"), main.getSettings().getStateUpdateSound());
+		}else if(newState == GameState.GRACE_PERIOD) {
+			// Activate all the players.
+			for(UHCPlayer player : main.getOnlinePlayers().values()) {
+				player.setState(PlayerState.ACTIVE);
+			}
+			
+			for(Scenario scenario : scenarios) {
+				scenario.activate();
+			}
+
+			timer = TimerUtils.createTimer(main, "Grace Period", main.getProfile().getGracePeriodLength());
+			timer.runTaskTimer(main, 0L, 20L);
+			UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("gracePeriodBegin"), main.getSettings().getStateUpdateSound());
+		}else if(newState == GameState.PVP) {
+			main.getWorldHandler().setPVP(true);
+			timer = TimerUtils.createTimer(main, "Map Shrink", main.getProfile().getBeginBorderShrinkTime());
+			timer.runTaskTimer(main, 0L, 20L);
+			UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("gracePeriodEnded"), main.getSettings().getStateUpdateSound());
 		}
 	}
 	
@@ -187,8 +307,14 @@ public class UHCGame {
 		return this.state;
 	}
 	
-	public boolean isScenarioActive(Scenario scenario) {
-		return scenarios.contains(scenario);
+	public boolean isScenarioActive(ScenarioType type) {
+		for(Scenario scenario : scenarios) {
+			if(scenario.getType() == type) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 	
 	public HashSet<Scenario> getScenarios() {

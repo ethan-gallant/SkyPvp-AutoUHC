@@ -11,12 +11,14 @@ import io.skypvp.uhc.menu.TeamSelectorMenu;
 import io.skypvp.uhc.player.UHCPlayer;
 import io.skypvp.uhc.player.event.UHCPlayerChangeTeamEvent;
 import io.skypvp.uhc.player.event.UHCPlayerDeathEvent;
+import io.skypvp.uhc.scenario.ScenarioType;
 import io.skypvp.uhc.timer.MatchTimer;
 import io.skypvp.uhc.timer.TimerUtils;
 import io.skypvp.uhc.timer.event.UHCMatchTimerExpiredEvent;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -128,7 +130,7 @@ public class ArenaEventsListener implements Listener {
 	@EventHandler
 	public void onUHCPlayerDeath(UHCPlayerDeathEvent evt) {
 		UHCPlayer player = evt.getPlayer();
-		Player cbPlayer = Bukkit.getPlayer(player.getUUID());
+		Player cbPlayer = player.getBukkitPlayer();
 		
 		// The player isn't in the match anymore.
 		game.handlePlayerExit(player);
@@ -140,25 +142,43 @@ public class ArenaEventsListener implements Listener {
 		String message = msgs.getRawMessage("player-died");
 		message = message.replaceAll("\\{player\\}", cbPlayer.getDisplayName());
 		
-		// Let's send the message to all the players in the match still.
-		for(UHCPlayer p : game.getPlayers()) {
-			p.getBukkitPlayer().sendMessage(msgs.constructMessage(message));
+		ExperienceOrb exp = ((ExperienceOrb) cbPlayer.getWorld().spawn(cbPlayer.getLocation(), ExperienceOrb.class));
+		exp.setExperience(evt.getDeathEvent().getDroppedExp());
+		
+		if(!game.isScenarioActive(ScenarioType.TIMEBOMB)) {
+			for(ItemStack drop : evt.getDeathEvent().getDrops()) {
+				cbPlayer.getWorld().dropItemNaturally(cbPlayer.getLocation(), drop);
+			}
 		}
+		
+		cbPlayer.getInventory().clear();
+		cbPlayer.getInventory().setHelmet(null);
+		cbPlayer.getInventory().setChestplate(null);
+		cbPlayer.getInventory().setLeggings(null);
+		cbPlayer.getInventory().setBoots(null);
+		
+		UHCSystem.broadcastMessageAndSound(msgs.color(message), Sound.ENDERDRAGON_GROWL, 4F);
 	}
 	
 	@EventHandler
 	public void onUHCMatchTimerExpire(UHCMatchTimerExpiredEvent evt) {
 		MatchTimer timer = evt.getTimer();
+		Profile profile = main.getProfile();
 		
 		if(game.getState() == GameState.STARTING && timer == game.getTimer()) {
-			int[] array = TimerUtils.convertToMinutesAndSeconds(settings.getGracePeriodTime());
+			int[] array = TimerUtils.convertToMinutesAndSeconds(profile.getGracePeriodLength());
 			timer.set("Grace Period", array[0], array[1]);
 		}
 		
 		if(timer == game.getTimer()) {
-			timer.runTaskTimer(main, 0L, 20L);
-		}else {
 			
+			if(game.getState() == GameState.PREPARING) {
+				game.setState(GameState.GRACE_PERIOD);
+			}else if(game.getState() == GameState.GRACE_PERIOD) {
+				game.setState(GameState.PVP);
+			}
+		}else if(timer == UHCSystem.getLobbyTimer()) {
+			game.startMatch();
 		}
 	}
 	

@@ -1,7 +1,9 @@
 package io.skypvp.uhc;
 
+import io.skypvp.uhc.arena.Profile;
 import io.skypvp.uhc.arena.UHCGame;
 import io.skypvp.uhc.event.TrafficEventsListener;
+import io.skypvp.uhc.player.ArenaPlayerEventsListener;
 import io.skypvp.uhc.player.UHCPlayer;
 
 import java.sql.SQLException;
@@ -20,6 +22,7 @@ import com.wimbli.WorldBorder.WorldBorder;
 public class SkyPVPUHC extends JavaPlugin {
 	
 	private Settings settings;
+	private Profile profile;
 	private Messages msgs;
 	private MultiverseCore multiverse;
 	private WorldHandler worldHandler;
@@ -43,6 +46,7 @@ public class SkyPVPUHC extends JavaPlugin {
 		multiverse = (MultiverseCore) getRequiredDependency("Multiverse-Core", MultiverseCore.class);
 		worldBorder = (WorldBorder) getRequiredDependency("WorldBorder", WorldBorder.class);
 		settings = new Settings(this);
+		profile = new Profile(this);
 		msgs = new Messages(this);
 		settings.load();
 	}
@@ -72,6 +76,7 @@ public class SkyPVPUHC extends JavaPlugin {
 			
 			// We're listening for join and leave events for database and arena purposes.
 			getServer().getPluginManager().registerEvents(new TrafficEventsListener(this), this);
+			getServer().getPluginManager().registerEvents(new ArenaPlayerEventsListener(this), this);
 		}
 	}
 	
@@ -101,6 +106,10 @@ public class SkyPVPUHC extends JavaPlugin {
 	
 	public Settings getSettings() {
 		return this.settings;
+	}
+	
+	public Profile getProfile() {
+		return this.profile;
 	}
 	
 	public Messages getMessages() {

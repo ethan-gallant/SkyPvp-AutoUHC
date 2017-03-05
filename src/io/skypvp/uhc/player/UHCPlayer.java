@@ -13,7 +13,7 @@ import org.bukkit.entity.Player;
 public class UHCPlayer {
 	
 	public enum PlayerState {
-		ACTIVE, FROZEN
+		ACTIVE, FROZEN, SPECTATING
 	}
 	
 	final UUID uuid;
@@ -24,6 +24,9 @@ public class UHCPlayer {
 	private int gamesWon;
 	private int kills;
 	private int deaths;
+	
+	// These are temporary game statistics.
+	private int gameKills;
 	
 	// Here are variables that are for game management.
 	private Menu activeMenu;
@@ -37,6 +40,7 @@ public class UHCPlayer {
 		this.gamesPlayed = gamesPlayed;
 		this.gamesWon = gamesWon;
 		this.kills = kills;
+		this.gameKills = 0;
 		this.deaths = deaths;
 		this.activeMenu = null;
 		this.team = null;
@@ -121,10 +125,15 @@ public class UHCPlayer {
 	
 	public void incrementKills() {
 		kills++;
+		if(inGame) gameKills++;
 	}
 	
 	public int getKills() {
 		return this.kills;
+	}
+	
+	public int getGameKills() {
+		return this.gameKills;
 	}
 	
 	public void incrementDeaths() {
