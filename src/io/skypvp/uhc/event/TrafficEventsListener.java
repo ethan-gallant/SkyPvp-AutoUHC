@@ -120,11 +120,8 @@ public class TrafficEventsListener implements Listener {
 						Team t = availableTeams.get(ThreadLocalRandom.current().nextInt(0, availableTeams.size()));
 						t.addMember(player);
 						
-						player.getBukkitPlayer().setHealth(player.getBukkitPlayer().getMaxHealth());
-						player.getBukkitPlayer().setFoodLevel(20);
-						
-						PacketPlayOutScoreboardTeam teamPacket = new PacketPlayOutScoreboardTeam(UHCSystem.GHOST_TEAM, 0);
-						((CraftPlayer) player.getBukkitPlayer()).getHandle().playerConnection.sendPacket(teamPacket);
+						//PacketPlayOutScoreboardTeam teamPacket = new PacketPlayOutScoreboardTeam(UHCSystem.GHOST_TEAM, 0);
+						//((CraftPlayer) player.getBukkitPlayer()).getHandle().playerConnection.sendPacket(teamPacket);
 					}
 					
 					if(state == GameState.WAITING && UHCSystem.canStartGame()) {
@@ -132,6 +129,7 @@ public class TrafficEventsListener implements Listener {
 					}
 				}
 				
+				player.prepareForGame();
 				UHCSystem.handleLobbyArrival(main, player);
 			}
 			
@@ -141,30 +139,34 @@ public class TrafficEventsListener implements Listener {
 	@EventHandler
 	public void onPlayerQuit(final PlayerQuitEvent evt) {
 		UHCPlayer player = main.getOnlinePlayers().get(evt.getPlayer().getUniqueId());
-		main.getOnlinePlayers().remove(player);
-		
-		UHCGame game = main.getGame();
-		if(!UHCSystem.canStartGame() && game.getState() == GameState.STARTING) {
-			game.cancelStart();
-		}
-		
-		if(player.getState() == PlayerState.SPECTATING) {
-			player.getBukkitPlayer().getActivePotionEffects().clear();
-		}
-		
-		for(UHCPlayer uhcPlayer : main.getOnlinePlayers().values()) {
-			UHCScoreboard board = uhcPlayer.getScoreboard();
-			if(board != null) {
-				board.generate(uhcPlayer);
-			}
-		}
-
-		new BukkitRunnable() {
+		if(player != null) {
+			main.getOnlinePlayers().remove(player);
 			
-			public void run() {
-				database.handlePlayerExit(evt.getPlayer().getUniqueId());
+			UHCGame game = main.getGame();
+			if(!UHCSystem.canStartGame() && game.getState() == GameState.STARTING) {
+				game.cancelStart();
+			}else if(player.isInGame()) {
+				game.handlePlayerExit(player);
 			}
 			
-		}.runTaskAsynchronously(main);
+			if(player.getState() == PlayerState.SPECTATING) {
+				player.getBukkitPlayer().getActivePotionEffects().clear();
+			}
+			
+			for(UHCPlayer uhcPlayer : main.getOnlinePlayers().values()) {
+				UHCScoreboard board = uhcPlayer.getScoreboard();
+				if(board != null) {
+					board.generate(uhcPlayer);
+				}
+			}
+	
+			new BukkitRunnable() {
+				
+				public void run() {
+					database.handlePlayerExit(evt.getPlayer().getUniqueId());
+				}
+				
+			}.runTaskAsynchronously(main);
+		}
 	}
 }

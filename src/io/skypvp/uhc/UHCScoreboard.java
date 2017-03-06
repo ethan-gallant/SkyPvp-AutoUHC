@@ -84,7 +84,9 @@ public class UHCScoreboard {
 				line = line.replaceAll("\\{gameKills\\}", String.valueOf(player.getGameKills()));
 				line = line.replaceAll("\\{tGameKills\\}", String.valueOf(getGameKills(player)));
 				line = line.replaceAll("\\{timerName\\}", String.valueOf(getTimerName()));
-				line = line.replaceAll("\\{timer\\}", handleTimerString(main.getGame().getTimer()));
+				if(!main.getGame().getTimer().getName().equalsIgnoreCase("Game Over")) {
+					line = line.replaceAll("\\{timer\\}", handleTimerString(main.getGame().getTimer()));
+				}
 				line = line.replaceAll("\\{lobbyTimer\\}", handleTimerString(UHCSystem.getLobbyTimer()));
 				line = line.replaceAll("\\{mode\\}", (main.getGame().isTeamMatch()) ? main.getMessages().getRawMessage("team") : main.getMessages().getRawMessage("solo"));
 				addLine(ChatColor.translateAlternateColorCodes('&', line));

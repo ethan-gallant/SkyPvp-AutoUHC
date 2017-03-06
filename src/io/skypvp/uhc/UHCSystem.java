@@ -48,15 +48,16 @@ public class UHCSystem {
 		GHOST_TEAM.setCanSeeFriendlyInvisibles(true);
 	}
 	
-	public static void toggleGhost(Player player) {
+	public static void setGhost(Player player, boolean enable) {
 		PacketPlayOutScoreboardTeam packet = new PacketPlayOutScoreboardTeam();
-		if(player.hasPotionEffect(PotionEffectType.INVISIBILITY)){
+		if(enable && player.hasPotionEffect(PotionEffectType.INVISIBILITY)){
 			packet = new PacketPlayOutScoreboardTeam(GHOST_TEAM, Arrays.asList(player.getName()), 4);
 			player.removePotionEffect(PotionEffectType.INVISIBILITY);
-		} else {
+		} else if(!enable) {
 			packet = new PacketPlayOutScoreboardTeam(GHOST_TEAM, Arrays.asList(player.getName()), 3);
 			player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 15));
 		}
+		
 		for(Player players : Bukkit.getOnlinePlayers()) {
 			((CraftPlayer) players).getHandle().playerConnection.sendPacket(packet);
 		}
@@ -180,7 +181,7 @@ public class UHCSystem {
 		player.setScoreboard(scoreboard);
 		
 		// If the game is available to join, let's give the player items.
-		if(main.getGame().getState() == GameState.WAITING) {
+		if(main.getGame().getState() == GameState.WAITING || main.getGame().getState() == GameState.STARTING) {
 			ItemStack kitSelector = main.getSettings().getKitSelectorItem();
 			ItemStack teamSelector = main.getSettings().getTeamSelectorItem();
 			p.getInventory().clear();

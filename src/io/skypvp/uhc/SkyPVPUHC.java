@@ -8,6 +8,7 @@ import io.skypvp.uhc.player.UHCPlayer;
 
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.UUID;
 
 import net.md_5.bungee.api.ChatColor;
@@ -83,7 +84,9 @@ public class SkyPVPUHC extends JavaPlugin {
 	public void onDisable() {
 		// In the case of a plugin unload, let's save player stats.
 		if(onlinePlayers.size() > 0) {
-			for(UUID id : onlinePlayers.keySet()) {
+			Iterator<UUID> iterator = onlinePlayers.keySet().iterator();
+			while(iterator.hasNext()) {
+				UUID id = iterator.next();
 				settings.getDatabase().handlePlayerExit(id);
 			}
 		}

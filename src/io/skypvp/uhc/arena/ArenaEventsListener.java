@@ -16,6 +16,7 @@ import io.skypvp.uhc.timer.MatchTimer;
 import io.skypvp.uhc.timer.TimerUtils;
 import io.skypvp.uhc.timer.event.UHCMatchTimerExpiredEvent;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.ExperienceOrb;
@@ -30,6 +31,8 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+
+import com.wimbli.WorldBorder.BorderData;
 
 public class ArenaEventsListener implements Listener {
 	
@@ -151,12 +154,7 @@ public class ArenaEventsListener implements Listener {
 			}
 		}
 		
-		cbPlayer.getInventory().clear();
-		cbPlayer.getInventory().setHelmet(null);
-		cbPlayer.getInventory().setChestplate(null);
-		cbPlayer.getInventory().setLeggings(null);
-		cbPlayer.getInventory().setBoots(null);
-		
+		player.prepareForGame();
 		UHCSystem.broadcastMessageAndSound(msgs.color(message), Sound.ENDERDRAGON_GROWL, 4F);
 	}
 	
@@ -176,7 +174,42 @@ public class ArenaEventsListener implements Listener {
 				game.setState(GameState.GRACE_PERIOD);
 			}else if(game.getState() == GameState.GRACE_PERIOD) {
 				game.setState(GameState.PVP);
+			}else if(game.getState() == GameState.PVP) {
+				BorderData border = main.getWorldBorder().getWorldBorder(Globals.GAME_WORLD_NAME);
+				int borderX = border.getRadiusX();
+				if(borderX - 250 >= 250) {
+					borderX -= 250;
+				}else if(borderX > 50 && borderX <= 250) {
+					borderX -= 50;
+				}
+				
+				main.getWorldHandler().setBorder(borderX, false);
+				border = main.getWorldBorder().getWorldBorder(Globals.GAME_WORLD_NAME);
+				double minX = border.getX() - border.getRadiusX();
+				double maxX = border.getX() + border.getRadiusX();
+				double minZ = border.getZ() - border.getRadiusZ();
+				double maxZ = border.getZ() + border.getRadiusZ();
+				
+				for(UHCPlayer player : main.getOnlinePlayers().values()) {
+					Player p = player.getBukkitPlayer();
+					Location l = p.getLocation();
+					
+					
+					if(!(minX < l.getX() && l.getX() < maxX) || (!(minZ < l.getZ() && l.getZ() < maxZ))) {
+						p.teleport(UHCSystem.getRandomSpawnPoint(minX, maxX, minZ, maxZ));
+						p.sendMessage("You've been teleported so you're within the new border.");
+					}
+				}
+				
+				if(borderX != 50) {
+					game.setState(GameState.PVP);
+				}else {
+					game.setState(GameState.DEATHMATCH);
+				}
+			}else if(game.getState() == GameState.DEATHMATCH) {
+				game.reset();
 			}
+			
 		}else if(timer == UHCSystem.getLobbyTimer()) {
 			game.startMatch();
 		}

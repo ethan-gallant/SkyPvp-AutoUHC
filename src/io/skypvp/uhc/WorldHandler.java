@@ -111,16 +111,23 @@ public class WorldHandler {
 			int initMapSize = profile.getInitialMapSize();
 			
 			// Let's setup the world border.
-			World cbWorld = gameWorld.getCBWorld();
-			Config.setBorder(Globals.GAME_WORLD_NAME, initMapSize, initMapSize, cbWorld.getSpawnLocation().getX(), cbWorld.getSpawnLocation().getZ(), false);
-			BorderData border = worldBorder.getWorldBorder(Globals.GAME_WORLD_NAME);
-			generateBlockBorder(border);
+			setBorder(initMapSize, true);
 			
 			// Let's set the respawn world.
 			gameWorld.setRespawnToWorld(Globals.LOBBY_WORLD_NAME);
 			
 			main.sendConsoleMessage(ChatColor.DARK_GREEN + "Successfully created new UHC game world!");
 			main.getGame().setState(GameState.WAITING);
+		}
+	}
+	
+	public void setBorder(int mapSize, boolean makeBlockBorder) {
+		World cbWorld = gameWorld.getCBWorld();
+		Config.setBorder(Globals.GAME_WORLD_NAME, mapSize, mapSize, cbWorld.getSpawnLocation().getX(), cbWorld.getSpawnLocation().getZ(), false);
+		
+		if(makeBlockBorder) {
+			BorderData border = worldBorder.getWorldBorder(Globals.GAME_WORLD_NAME);
+			generateBlockBorder(border);
 		}
 	}
 	

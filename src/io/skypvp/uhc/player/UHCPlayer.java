@@ -2,6 +2,7 @@ package io.skypvp.uhc.player;
 
 import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.UHCScoreboard;
+import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.menu.Menu;
 
@@ -46,6 +47,17 @@ public class UHCPlayer {
 		this.team = null;
 		this.scoreboard = null;
 		this.inGame = true;
+	}
+	
+	public void prepareForGame() {
+		getBukkitPlayer().getInventory().clear();
+		getBukkitPlayer().getInventory().setHelmet(null);
+		getBukkitPlayer().getInventory().setChestplate(null);
+		getBukkitPlayer().getInventory().setLeggings(null);
+		getBukkitPlayer().getInventory().setBoots(null);
+		getBukkitPlayer().setHealth(getBukkitPlayer().getMaxHealth());
+		getBukkitPlayer().setFoodLevel(20);
+		//UHCSystem.setGhost(getBukkitPlayer(), false);
 	}
 	
 	public void setState(PlayerState state) {

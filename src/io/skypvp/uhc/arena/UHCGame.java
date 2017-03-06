@@ -10,18 +10,28 @@ import io.skypvp.uhc.scenario.Scenario;
 import io.skypvp.uhc.scenario.ScenarioType;
 import io.skypvp.uhc.timer.MatchTimer;
 import io.skypvp.uhc.timer.TimerUtils;
+import io.skypvp.uhc.util.FireworkEffectBuilder;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 
 import net.md_5.bungee.api.ChatColor;
 
+import org.bukkit.Bukkit;
+import org.bukkit.FireworkEffect;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Sound;
+import org.bukkit.World;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.util.Vector;
 
@@ -46,7 +56,7 @@ public class UHCGame {
 	
 	public UHCGame(SkyPVPUHC instance) {
 		this.main = instance;
-		this.state = GameState.PREPARING;
+		this.state = GameState.WAITING;
 		this.scenarios = new HashSet<Scenario>();
 		this.isTeamMatch = true;
 		this.initialPlayers = 0;
@@ -201,8 +211,49 @@ public class UHCGame {
 				pTeam.removeMember(player);
 				
 				if(pTeam.getMembers().size() == 0) {
-					
+					String teamEliminated = UHCSystem.getTeamNameWithPrefix(pTeam).concat(" has been eliminated!");
+					UHCSystem.broadcastMessageAndSound(main.getMessages().color(teamEliminated), Sound.ENDERDRAGON_HIT, 2F);
 				}
+			}
+			
+			final ArrayList<Team> teamsAlive = new ArrayList<Team>();
+			for(Team team : UHCSystem.getTeams()) {
+				if(team.getMembers().size() > 0) {
+					teamsAlive.add(team);
+				}
+			}
+			
+			if(teamsAlive.size() == 1) {
+				String teamWon = UHCSystem.getTeamNameWithPrefix(teamsAlive.get(0)).concat(" has won the game!");
+				UHCSystem.broadcastMessage(main.getMessages().color(teamWon));
+				timer = new MatchTimer(main, "Game Over", -1, -1);
+				
+				final BukkitTask fireworkTask = new BukkitRunnable() {
+					
+					public void run() {
+						for(UHCPlayer player : teamsAlive.get(0).getMembers()) {
+							// Let's shoot a firework at the player's location.
+							final FireworkEffect effect = FireworkEffectBuilder.buildRandomEffect();
+							final Location pLoc = player.getBukkitPlayer().getLocation();
+							final Location fLoc = new Location(pLoc.getWorld(), pLoc.getX() + 0.5, pLoc.getY() + 1, pLoc.getZ() + 0.5);
+							final Firework firework = (Firework) pLoc.getWorld().spawnEntity(fLoc, EntityType.FIREWORK);
+							final FireworkMeta meta = firework.getFireworkMeta();
+							meta.addEffect(effect);
+							meta.setPower(1);
+							firework.setFireworkMeta(meta);
+						}
+					}
+					
+				}.runTaskTimer(main, 0L, 10L);
+				
+				new BukkitRunnable() {
+					
+					public void run() {
+						fireworkTask.cancel();
+						reset();
+					}
+					
+				}.runTaskLater(main, 100L);
 			}
 		}
 		
@@ -225,7 +276,7 @@ public class UHCGame {
 		player.setState(PlayerState.SPECTATING);
 		player.getBukkitPlayer().setVelocity(new Vector(0, 1, 0));
 		player.getBukkitPlayer().setAllowFlight(true);
-		UHCSystem.toggleGhost(player.getBukkitPlayer());
+		//UHCSystem.setGhost(player.getBukkitPlayer(), true);
 		
 		new BukkitRunnable() {
 			
@@ -257,23 +308,39 @@ public class UHCGame {
 	
 	public void reset() {
 		main.sendConsoleMessage(ChatColor.YELLOW + "Resetting game system...");
-		setState(GameState.PREPARING);
+		setState(GameState.WAITING);
 		scenarios.clear();
 		
 		// Let's reset our timers.
 		initialPlayers = 0;
-		timer.reset();
+		timer = TimerUtils.createTimer(main, "Preparing", main.getSettings().getFreezeTime());
 		
 		// Let's clear the players out if need-be.
 		for(UHCPlayer p : getPlayers()) {
-			handlePlayerExit(p);
+			p.setState(PlayerState.ACTIVE);
+			p.prepareForGame();
+			
+			World lobby = Bukkit.getWorld(Globals.LOBBY_WORLD_NAME);
+			p.getBukkitPlayer().teleport(lobby.getSpawnLocation());
+			p.setInGame(false);
 		}
 		
 		// Let's delete the UHC world.
 		main.getWorldHandler().deleteGameWorld();
+		main.getWorldHandler().createGameWorld();
+		
+		// Let's reset the lobby timer.
+		UHCSystem.setLobbyTimer(main);
+		
+		Iterator<UHCPlayer> players = main.getOnlinePlayers().values().iterator();
+		while(players.hasNext()) {
+			players.next().getBukkitPlayer().kickPlayer("RECONNECT for a new round.");
+			players.remove();
+		}
 	}
 	
 	public void setState(GameState newState) {
+		GameState prevState = state;
 		this.state = newState;
 		
 		if(newState == GameState.STARTING) {
@@ -297,9 +364,17 @@ public class UHCGame {
 			UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("gracePeriodBegin"), main.getSettings().getStateUpdateSound());
 		}else if(newState == GameState.PVP) {
 			main.getWorldHandler().setPVP(true);
-			timer = TimerUtils.createTimer(main, "Map Shrink", main.getProfile().getBeginBorderShrinkTime());
+			int shrinkTime = main.getProfile().getBeginBorderShrinkTime();
+			if(prevState == GameState.PVP) {
+				shrinkTime = main.getSettings().getBorderShrinkEveryTime();
+			}
+			
+			timer = TimerUtils.createTimer(main, "Map Shrink", shrinkTime);
 			timer.runTaskTimer(main, 0L, 20L);
-			UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("gracePeriodEnded"), main.getSettings().getStateUpdateSound());
+			if(prevState != GameState.PVP) UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("gracePeriodEnded"), main.getSettings().getStateUpdateSound());
+		}else if(newState == GameState.DEATHMATCH) {
+			timer = TimerUtils.createTimer(main, "Deathmatch", main.getProfile().getGracePeriodLength());
+			timer.runTaskTimer(main, 0L, 20L);
 		}
 	}
 	
