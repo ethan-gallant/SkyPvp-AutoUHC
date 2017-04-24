@@ -9,15 +9,18 @@ import io.skypvp.uhc.scenario.ScenarioDrops;
 import io.skypvp.uhc.timer.MatchTimer;
 import io.skypvp.uhc.timer.TimerUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
-import net.minecraft.server.v1_7_R4.PacketPlayOutScoreboardTeam;
-import net.minecraft.server.v1_7_R4.Scoreboard;
-import net.minecraft.server.v1_7_R4.ScoreboardTeam;
-import net.minecraft.util.io.netty.util.internal.ThreadLocalRandom;
+import net.minecraft.server.v1_8_R3.PacketPlayOutScoreboardTeam;
+import net.minecraft.server.v1_8_R3.Scoreboard;
+import net.minecraft.server.v1_8_R3.ScoreboardTeam;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -31,8 +34,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.DisplaySlot;
-
-import org.bukkit.craftbukkit.v1_7_R4.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 
 public class UHCSystem {
 	
@@ -41,9 +43,14 @@ public class UHCSystem {
 	private static HashSet<ItemStack> restrictedItems = new HashSet<ItemStack>();
 	private static MatchTimer lobbyTimer;
 	private static HashMap<Block, ScenarioDrops> scenarioDrops = new HashMap<Block, ScenarioDrops>();
+	private static ArrayList<UUID> forcestartVotes;
 	public static ScoreboardTeam GHOST_TEAM;
 	
 	static {
+	    teams = new HashSet<Team>();
+	    restrictedItems = new HashSet<ItemStack>();
+	    scenarioDrops = new HashMap<Block, ScenarioDrops>();
+	    forcestartVotes = new ArrayList<UUID>();
 		GHOST_TEAM = new ScoreboardTeam(new Scoreboard(), "spectators");
 		GHOST_TEAM.setCanSeeFriendlyInvisibles(true);
 	}
@@ -61,6 +68,57 @@ public class UHCSystem {
 		for(Player players : Bukkit.getOnlinePlayers()) {
 			((CraftPlayer) players).getHandle().playerConnection.sendPacket(packet);
 		}
+	}
+	
+	public static boolean hasVotedForForceStart(UUID uuid) {
+	    return forcestartVotes.contains(uuid);
+	}
+	
+	/*
+	 * Returns if the vote was successful or not.
+	 * @return boolean
+	 */
+
+	public static boolean voteForForceStart(UUID uuid) {
+	    boolean voted = hasVotedForForceStart(uuid);
+        Player p = Bukkit.getPlayer(uuid);
+        if(p == null) return false;
+        
+	    if(!voted) {
+            int onlinePlayers = main.getOnlinePlayers().keySet().size();
+            if(main.getGame().isTeamMatch() && onlinePlayers >= main.getSettings().getMinimumTeamGamePlayers() 
+                    || !main.getGame().isTeamMatch() && onlinePlayers >= main.getSettings().getMinimumSoloGamePlayers()) {
+                // There's enough players online.
+                if(main.getGame().getState() == GameState.WAITING) {
+                    forcestartVotes.add(uuid);
+                    p.sendMessage(main.getMessages().color(main.getMessages().getMessage("voteSuccess")));
+                    
+                    double perct = ((double) forcestartVotes.size()) / onlinePlayers;
+                    if(perct >= 0.75) {
+                        // Great, we have enough voters!
+                        if(main.getGame().getState() == GameState.WAITING) {
+                            main.getGame().setState(GameState.STARTING);
+                            String forceStartMsg = main.getMessages().color(main.getMessages().getMessage("forceStartSuccess"));
+                            Iterator<UUID> iterator = main.getOnlinePlayers().keySet().iterator();
+                            while(iterator.hasNext()) {
+                                UUID uid = iterator.next();
+                                Player bP = Bukkit.getPlayer(uid);
+                                if(bP != null) {
+                                    bP.sendMessage(forceStartMsg);
+                                }
+                            }
+                        }
+                    }
+                }
+            }else {
+                p.sendMessage(main.getMessages().color(main.getMessages().getMessage("notEnoughPlayers")));
+                return false;
+            }
+	        
+	        return true;
+	    }
+	    
+	    return false;
 	}
 	
 	public static void setLobbyTimer(SkyPVPUHC instance) {
@@ -191,29 +249,41 @@ public class UHCSystem {
 	}
 	
 	public static void broadcastSound(Sound sound) {
-		for(UHCPlayer p : main.getOnlinePlayers().values()) {
-			p.getBukkitPlayer().playSound(p.getBukkitPlayer().getLocation(), sound, 1F, 1F);
-		}
+        Iterator<UHCPlayer> iterator = main.getOnlinePlayers().values().iterator();
+        while(iterator.hasNext()) {
+            UHCPlayer p = iterator.next();
+            Player bP = Bukkit.getPlayer(p.getUUID());
+            if(bP != null) {
+                bP.playSound(bP.getLocation(), sound, 1F, 1F);
+            }
+        }
 	}
 	
 	public static void broadcastMessage(String msg) {
-		for(UHCPlayer p : main.getOnlinePlayers().values()) {
-			p.getBukkitPlayer().sendMessage(msg);
-		}
+        Iterator<UHCPlayer> iterator = main.getOnlinePlayers().values().iterator();
+        while(iterator.hasNext()) {
+            UHCPlayer p = iterator.next();
+            Player bP = Bukkit.getPlayer(p.getUUID());
+            if(bP != null) {
+                bP.sendMessage(msg);
+            }
+        }
 	}
 	
 	public static void broadcastMessageAndSound(String msg, Sound sound) {
-		for(UHCPlayer p : main.getOnlinePlayers().values()) {
-			p.getBukkitPlayer().sendMessage(msg);
-			p.getBukkitPlayer().playSound(p.getBukkitPlayer().getLocation(), sound, 1F, 1F);
-		}
+	    UHCSystem.broadcastMessageAndSound(msg, sound, 1F);
 	}
 	
 	public static void broadcastMessageAndSound(String msg, Sound sound, float volume) {
-		for(UHCPlayer p : main.getOnlinePlayers().values()) {
-			p.getBukkitPlayer().sendMessage(msg);
-			p.getBukkitPlayer().playSound(p.getBukkitPlayer().getLocation(), sound, volume, volume);
-		}
+	    Iterator<UHCPlayer> iterator = main.getOnlinePlayers().values().iterator();
+	    while(iterator.hasNext()) {
+	        UHCPlayer p = iterator.next();
+	        Player bP = Bukkit.getPlayer(p.getUUID());
+	        if(bP != null) {
+	            bP.sendMessage(msg);
+	            bP.playSound(bP.getLocation(), sound, volume, volume);
+	        }
+	    }
 	}
 	
 	public static boolean canStartGame() {

@@ -39,7 +39,7 @@ public class TripleOres extends DropUpdaterScenario {
 			ScenarioDrops drops = UHCSystem.getScenarioDrops(b);
 			if(drops == null && evt.isCancelled()) return;
 			
-			if(drops == null) {
+			if(drops == null && !evt.isCancelled()) {
 				drops = new ScenarioDrops(instance, evt);
 				UHCSystem.addScenarioDrop(b, drops);
 			}

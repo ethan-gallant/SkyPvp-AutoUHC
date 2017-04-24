@@ -1,5 +1,9 @@
 package io.skypvp.uhc;
 
+import java.util.Arrays;
+import java.util.List;
+
+import io.skypvp.uhc.arena.UHCGame.GameState;
 import net.md_5.bungee.api.ChatColor;
 
 public class Globals {
@@ -11,4 +15,5 @@ public class Globals {
 	public static final String LOBBY_WORLD_NAME = "uhc-lobby";
 	public static int MAX_MEMBERS_PER_TEAM = 1;
 	public static final ChatColor CLIENT_COLOR = ChatColor.LIGHT_PURPLE;
+	public static final List<GameState> INVULNERABILITY_PERIODS = Arrays.asList(GameState.FINISHED, GameState.GRACE_PERIOD);
 }

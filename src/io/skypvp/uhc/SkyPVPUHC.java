@@ -2,9 +2,11 @@ package io.skypvp.uhc;
 
 import io.skypvp.uhc.arena.Profile;
 import io.skypvp.uhc.arena.UHCGame;
+import io.skypvp.uhc.command.CommandPool;
 import io.skypvp.uhc.event.TrafficEventsListener;
 import io.skypvp.uhc.player.ArenaPlayerEventsListener;
 import io.skypvp.uhc.player.UHCPlayer;
+import io.skypvp.uhc.util.ConfigUtils;
 
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -28,8 +30,9 @@ public class SkyPVPUHC extends JavaPlugin {
 	private MultiverseCore multiverse;
 	private WorldHandler worldHandler;
 	private WorldBorder worldBorder;
-	private UHCGame game;
-	private HashMap<UUID, UHCPlayer> onlinePlayers;
+	private CommandPool cmdPool;
+	public static UHCGame game;
+	public static HashMap<UUID, UHCPlayer> onlinePlayers;
 	
 	public void onEnable() {
 		// We're going to require the lobby world to be called a certain name.
@@ -41,7 +44,7 @@ public class SkyPVPUHC extends JavaPlugin {
 			return;
 		}
 		
-		
+		ConfigUtils.main = this;
 		onlinePlayers = new HashMap<UUID, UHCPlayer>();
 		worldHandler = null;
 		multiverse = (MultiverseCore) getRequiredDependency("Multiverse-Core", MultiverseCore.class);
@@ -71,6 +74,7 @@ public class SkyPVPUHC extends JavaPlugin {
 	public void databaseConnected() {
 		if(isEnabled()) {
 			msgs = new Messages(this);
+			cmdPool = new CommandPool(this);
 			game = new UHCGame(this);
 			worldHandler = new WorldHandler(this);
 			UHCSystem.setLobbyTimer(this);
@@ -78,6 +82,7 @@ public class SkyPVPUHC extends JavaPlugin {
 			// We're listening for join and leave events for database and arena purposes.
 			getServer().getPluginManager().registerEvents(new TrafficEventsListener(this), this);
 			getServer().getPluginManager().registerEvents(new ArenaPlayerEventsListener(this), this);
+			getServer().getPluginManager().registerEvents(cmdPool, this);
 		}
 	}
 	
@@ -132,11 +137,11 @@ public class SkyPVPUHC extends JavaPlugin {
 	}
 	
 	public UHCGame getGame() {
-		return this.game;
+		return SkyPVPUHC.game;
 	}
 	
 	public HashMap<UUID, UHCPlayer> getOnlinePlayers() {
-		return this.onlinePlayers;
+		return SkyPVPUHC.onlinePlayers;
 	}
 	
 	public void sendConsoleMessage(String msg) {

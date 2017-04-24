@@ -65,7 +65,7 @@ public class OneHeal extends Scenario {
 			ItemStack item = p.getItemInHand();
 			if(item.isSimilar(healItem) && p.getHealth() < p.getMaxHealth()) {
 				p.setHealth(p.getMaxHealth());
-				p.getItemInHand().setType(Material.AIR);
+				p.getInventory().remove(item);
 			}
 		}
 	}

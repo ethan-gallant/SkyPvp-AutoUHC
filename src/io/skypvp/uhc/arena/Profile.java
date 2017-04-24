@@ -15,6 +15,7 @@ import net.md_5.bungee.api.ChatColor;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 
 public class Profile {
 	
@@ -36,6 +37,9 @@ public class Profile {
 	// The scenarios that are active
 	private ArrayList<ScenarioType> scenarios;
 	
+	// The default starting items for a match.
+	private ArrayList<ItemStack> startingItems;
+	
 	public Profile(SkyPVPUHC instance) {
 		this.main = instance;
 		this.profileFile = null;
@@ -50,6 +54,7 @@ public class Profile {
 		this.healPlayersAfterTime = 0;
 		this.beginBorderShrink = 0;
 		this.scenarios = new ArrayList<ScenarioType>();
+		this.startingItems = new ArrayList<ItemStack>();
 		
 		read("profile");
 	}
@@ -195,6 +200,15 @@ public class Profile {
 		return this.scenarios;
 	}
 	
+    /**
+     * Fetches the starting items selected for this profile.
+     * @return ArrayList<ItemStack>
+     */
+    
+    public ArrayList<ItemStack> getStartingItems() {
+        return this.startingItems;
+    }
+	
 	/**
 	 * Loads a profile file into the reader.
 	 * Input raw file name of profile file within plugin directory.
@@ -325,6 +339,12 @@ public class Profile {
 					String.format("&cERROR: &4Scenario Type config key %s does not exist.", 
 				scenario)));
 			}
+		}
+		
+		// Let's load our starting items.
+		for(String itemData : profile.getStringList("startingItems")) {
+		    ItemStack item = ConfigUtils.handleIconString(itemData);
+		    startingItems.add(item);
 		}
 	}
 	

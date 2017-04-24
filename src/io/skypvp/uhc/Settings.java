@@ -2,6 +2,7 @@ package io.skypvp.uhc;
 
 import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.scenario.ScenarioType;
+import io.skypvp.uhc.util.ConfigUtils;
 
 import java.io.File;
 import java.sql.SQLException;
@@ -10,7 +11,6 @@ import java.util.List;
 
 import net.md_5.bungee.api.ChatColor;
 
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -44,6 +44,11 @@ public class Settings {
 	// Stuff for scoreboards
 	private String scoreboardHeader;
 	
+	// Server information for Jedis.
+	private String jedisHost;
+	private int jedisPort;
+	private String jedisPassword;
+	
 	public Settings(SkyPVPUHC instance) {
 		this.main = instance;
 		this.configFile = new File(main.getDataFolder() + "/config.yml");
@@ -65,6 +70,9 @@ public class Settings {
 		this.countdown = null;
 		this.error = null;
 		this.stateUpdate = null;
+		this.jedisHost = "";
+		this.jedisPort = 0;
+		this.jedisPassword = "";
 		
 		boolean configAvailable = configFile.exists();
 		if(!configAvailable) {
@@ -95,36 +103,6 @@ public class Settings {
 		return true;
 	}
 	
-	private ItemStack handleIconString(String itemStackStr) {
-		String[] split = itemStackStr.toUpperCase().split(":");
-		try {
-			Material mat = Material.valueOf(split[0]);
-			short data = 0;
-			if(split.length == 2) {
-				data = Short.valueOf(split[1]);
-			}
-
-			return new ItemStack(mat, 1, data);
-		} catch (IllegalArgumentException | NullPointerException e) {
-			main.sendConsoleMessage(ChatColor.DARK_RED + String.format("Material %s does not exist. Please check your config.", split[0]));
-			main.disable();
-		}
-		
-		return null;
-	}
-	
-	private Sound handleSoundString(String soundStr) {
-		try {
-			Sound snd = Sound.valueOf(soundStr);
-			return snd;
-		} catch (IllegalArgumentException | NullPointerException e) {
-			main.sendConsoleMessage(ChatColor.DARK_RED + String.format("Sound %s does not exist. Please check your config.", soundStr));
-			main.disable();
-		}
-		
-		return null;
-	}
-	
 	public void load() {
 		if(configUpToDate()) {
 			serverName = config.getString("server-name");
@@ -138,9 +116,9 @@ public class Settings {
 			minTeamGamePlayers = config.getInt("minimum-team-game-players");
 			
 			// Let's load up the materials.
-			kitSelector = handleIconString(config.getString("kit-selector-item"));
+			kitSelector = ConfigUtils.handleIconString(config.getString("kit-selector-item"));
 			kitSelector = UHCSystem.nameItem(kitSelector, main.getMessages().color(main.getMessages().getRawMessage("kits")));
-			teamSelector = handleIconString(config.getString("team-selector-item"));
+			teamSelector = ConfigUtils.handleIconString(config.getString("team-selector-item"));
 			teamSelector = UHCSystem.nameItem(teamSelector, main.getMessages().color(main.getMessages().getRawMessage("teams")));
 			UHCSystem.addRestrictedItem(kitSelector);
 			UHCSystem.addRestrictedItem(teamSelector);
@@ -154,16 +132,16 @@ public class Settings {
 			
 			// Let's load up the sounds.
 			ConfigurationSection sounds = config.getConfigurationSection("sounds");
-			error = handleSoundString(sounds.getString("error"));
-			countdown = handleSoundString(sounds.getString("countdown"));
-			stateUpdate = handleSoundString(sounds.getString("state-update"));
+			error = ConfigUtils.handleSoundString(sounds.getString("error"));
+			countdown = ConfigUtils.handleSoundString(sounds.getString("countdown"));
+			stateUpdate = ConfigUtils.handleSoundString(sounds.getString("state-update"));
 			
 			// Let's load up the teams.
 			ConfigurationSection teams = config.getConfigurationSection("teams");
 			for(String key : teams.getKeys(false)) {
 				ConfigurationSection teamSection = teams.getConfigurationSection(key);
 				String name = teamSection.getString("name");
-				ItemStack icon = handleIconString(teamSection.getString("icon"));
+				ItemStack icon = ConfigUtils.handleIconString(teamSection.getString("icon"));
 				UHCSystem.addTeam(new Team(name, icon));
 			}
 			
@@ -175,13 +153,26 @@ public class Settings {
 			for(String key : scenarioSection.getKeys(false)) {
 				ConfigurationSection scenSection = scenarioSection.getConfigurationSection(key);
 				String name = scenSection.getString("name");
-				ItemStack icon = handleIconString(scenSection.getString("icon"));
+				ItemStack icon = ConfigUtils.handleIconString(scenSection.getString("icon"));
 				scenarios.get(key).setName(name);
 				scenarios.get(key).setIcon(icon);
 				scenarios.get(key).setSettingsSection(scenSection);
 			}
 			
 			Globals.MAX_MEMBERS_PER_TEAM = (int) Math.ceil(main.getProfile().getMaxPlayers() / UHCSystem.getTeams().size());
+			
+			// Let's load up the Jedis settings.
+			ConfigurationSection jedis = config.getConfigurationSection("jedis");
+			jedisHost = jedis.getString("host");
+			jedisPort = jedis.getInt("port");
+			jedisPassword = jedis.getString("password");
+			
+			// Temporaily disabled.
+			/**
+			if(10 / 10 == 10 + 5) {
+			    UHCJedis jedisConn = new UHCJedis(main);
+			    jedisConn.connect(jedisHost, jedisPort);
+			}**/
 
 			// Let's load the database settings.
 			ConfigurationSection db = config.getConfigurationSection("database");

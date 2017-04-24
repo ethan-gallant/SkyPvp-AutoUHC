@@ -1,6 +1,8 @@
 package io.skypvp.uhc.player;
 
+import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.SkyPVPUHC;
+import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.arena.UHCGame;
 import io.skypvp.uhc.arena.UHCGame.GameState;
 import io.skypvp.uhc.player.UHCPlayer.PlayerState;
@@ -10,6 +12,7 @@ import io.skypvp.uhc.player.event.UHCPlayerKillUHCPlayerEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import org.bukkit.Location;
@@ -21,6 +24,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
@@ -54,6 +58,44 @@ public class ArenaPlayerEventsListener implements Listener {
 		}
 	}
 	
+    
+    @EventHandler
+    public void onPlayerChat(AsyncPlayerChatEvent evt) {
+        Player p = evt.getPlayer();
+        UHCPlayer uhcPlayer = instance.getOnlinePlayers().get(p.getUniqueId());
+        if(uhcPlayer == null) return;
+        
+        // If the player is spectating, we only want spectators to see the message.
+        if(uhcPlayer.getState() == PlayerState.SPECTATING) {
+            Iterator<Player> pIterator = evt.getRecipients().iterator();
+            while(pIterator.hasNext()) {
+                Player receiver = pIterator.next();
+                UHCPlayer uPlayer = instance.getOnlinePlayers().get(receiver.getUniqueId());
+                if(uPlayer != null && uPlayer.getState() != PlayerState.SPECTATING) {
+                    evt.getRecipients().remove(receiver);
+                }
+            }
+            
+            // We don't care if this player is in a team game or whatever. Only spectators can see this message.
+            // We're done.
+            return;
+        }
+        
+        if(game.isTeamMatch() && game.getState().toIndex() > GameState.PREPARING.toIndex()) {
+            // Great, the player is a team game that has already started and is past the "Preparing" stage.
+            Team team = uhcPlayer.getTeam();
+            
+            if(team != null) {
+                evt.getRecipients().clear();
+                for(UHCPlayer member : team.getMembers()) {
+                    if(member.getBukkitPlayer() != p) {
+                        evt.getRecipients().add(member.getBukkitPlayer());
+                    }
+                }
+            }
+        }
+    }
+	
 	@EventHandler
 	public void onPlayerDamaged(EntityDamageEvent evt) {
 		Entity ent = evt.getEntity();
@@ -61,7 +103,7 @@ public class ArenaPlayerEventsListener implements Listener {
 			Player p = (Player) ent;
 			UHCPlayer uhcPlayer = instance.getOnlinePlayers().get(p.getUniqueId());
 			
-			if(uhcPlayer != null && isPlayerInGame(uhcPlayer)) {
+			if(uhcPlayer != null && isPlayerInGame(uhcPlayer) && !Globals.INVULNERABILITY_PERIODS.contains(game.getState())) {
 				if(p.getHealth() - evt.getDamage() > 0.0) {
 					pMgr.callEvent(new UHCPlayerDamageEvent(uhcPlayer, evt));
 				}else {

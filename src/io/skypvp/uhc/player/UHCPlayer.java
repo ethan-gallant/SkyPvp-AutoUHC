@@ -2,7 +2,6 @@ package io.skypvp.uhc.player;
 
 import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.UHCScoreboard;
-import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.menu.Menu;
 
@@ -34,6 +33,7 @@ public class UHCPlayer {
 	private Team team;
 	private UHCScoreboard scoreboard;
 	private boolean inGame;
+	private boolean inTeamChat;
 	
 	public UHCPlayer(UUID id, int gamesPlayed, int gamesWon, int kills, int deaths) {
 		this.uuid = id;
@@ -47,6 +47,7 @@ public class UHCPlayer {
 		this.team = null;
 		this.scoreboard = null;
 		this.inGame = true;
+		this.inTeamChat = false;
 	}
 	
 	public void prepareForGame() {
@@ -57,6 +58,7 @@ public class UHCPlayer {
 		getBukkitPlayer().getInventory().setBoots(null);
 		getBukkitPlayer().setHealth(getBukkitPlayer().getMaxHealth());
 		getBukkitPlayer().setFoodLevel(20);
+		inTeamChat = false;
 		//UHCSystem.setGhost(getBukkitPlayer(), false);
 	}
 	
@@ -103,6 +105,14 @@ public class UHCPlayer {
 	
 	public boolean isInGame() {
 		return this.inGame;
+	}
+	
+	public void setInTeamChat(boolean flag) {
+	    this.inTeamChat = flag;
+	}
+	
+	public boolean isInTeamChat() {
+	    return this.inTeamChat;
 	}
 	
 	public int getKillDeathRatio() {

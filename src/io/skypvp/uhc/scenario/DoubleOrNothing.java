@@ -6,8 +6,7 @@ import io.skypvp.uhc.player.UHCPlayer;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-
-import net.minecraft.util.io.netty.util.internal.ThreadLocalRandom;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;

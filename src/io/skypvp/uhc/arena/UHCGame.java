@@ -29,6 +29,7 @@ import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -40,7 +41,17 @@ import com.wimbli.WorldBorder.BorderData;
 public class UHCGame {
 	
 	public enum GameState {
-		PREPARING, WAITING, STARTING, GRACE_PERIOD, PVP, DEATHMATCH, FINISHED
+	    WAITING(0), STARTING(1), PREPARING(2), GRACE_PERIOD(3), PVP(4), DEATHMATCH(5), FINISHED(6);
+		
+		private final int stateIndex;
+		
+		private GameState(int index) {
+		    this.stateIndex = index;
+		}
+		
+		public int toIndex() {
+		    return this.stateIndex;
+		}
 	}
 	
 	final SkyPVPUHC main;
@@ -83,8 +94,15 @@ public class UHCGame {
 			player.setInGame(true);
 			player.getBukkitPlayer().getInventory().clear();
 			
+			for(ItemStack item : main.getProfile().getStartingItems()) {
+			    player.getBukkitPlayer().getInventory().addItem(item.clone());
+			}
+			
 			if(player.getTeam() != null) {
 				player.getTeam().giveArmor(player);
+				
+				// Let's default to having team chat on.
+				player.setInTeamChat(true);
 			}
 			
 			UHCScoreboard scoreboard = new UHCScoreboard(main, "gameScoreboard", DisplaySlot.SIDEBAR);
@@ -257,6 +275,15 @@ public class UHCGame {
 			}
 		}
 		
+		// We need to reset the player's stats if we changed them.
+		if(state.toIndex() >= GameState.GRACE_PERIOD.toIndex()) {
+    		for(Scenario scenario : scenarios) {
+    		    if(scenario.doesEditPlayerStats()) {
+    		        scenario.resetStats(player);
+    		    }
+    		}
+		}
+		
 		enterSpectate(player);
 		
 		player.setInGame(false);
@@ -309,6 +336,12 @@ public class UHCGame {
 	public void reset() {
 		main.sendConsoleMessage(ChatColor.YELLOW + "Resetting game system...");
 		setState(GameState.WAITING);
+		
+		// Let's clear up the scenarios.
+		for(Scenario scenario : scenarios) {
+		    scenario.deactivate();
+		}
+
 		scenarios.clear();
 		
 		// Let's reset our timers.

@@ -10,7 +10,6 @@ import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.arena.UHCGame;
 import io.skypvp.uhc.arena.UHCGame.GameState;
 import io.skypvp.uhc.player.UHCPlayer;
-import io.skypvp.uhc.player.UHCPlayer.PlayerState;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,9 +18,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
 import net.md_5.bungee.api.ChatColor;
-import net.minecraft.server.v1_7_R4.PacketPlayOutScoreboardTeam;
 
-import org.bukkit.craftbukkit.v1_7_R4.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -149,14 +146,13 @@ public class TrafficEventsListener implements Listener {
 				game.handlePlayerExit(player);
 			}
 			
-			if(player.getState() == PlayerState.SPECTATING) {
-				player.getBukkitPlayer().getActivePotionEffects().clear();
-			}
+			player.getBukkitPlayer().getActivePotionEffects().clear();
 			
 			for(UHCPlayer uhcPlayer : main.getOnlinePlayers().values()) {
 				UHCScoreboard board = uhcPlayer.getScoreboard();
 				if(board != null) {
 					board.generate(uhcPlayer);
+					uhcPlayer.setScoreboard(board);
 				}
 			}
 	

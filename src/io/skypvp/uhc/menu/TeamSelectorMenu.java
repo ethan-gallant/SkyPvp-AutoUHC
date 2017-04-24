@@ -29,7 +29,6 @@ public class TeamSelectorMenu extends Menu {
 		this.teams = new HashMap<Integer, Team>();
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public void show() {
 		ui.clear();
