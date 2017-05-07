@@ -26,12 +26,15 @@ public class Profile {
 	// Basic settings from the profile.
 	private int initMapSize;
 	private int maxPlayers;
+	private int teamSize;
+	private boolean isPrivate;
 	private String owner;
 	private Date expiration;
 	
 	// Timings from the profile. (in seconds)
 	private int gracePeriodLength;
 	private int healPlayersAfterTime;
+	private int gameplayTime;
 	private int beginBorderShrink;
 	
 	// The scenarios that are active
@@ -48,11 +51,14 @@ public class Profile {
 		// Initialize our profile variables.
 		this.initMapSize = 0;
 		this.maxPlayers = 0;
+		this.teamSize = 2;
+		this.isPrivate = false;
 		this.owner = null;
 		this.expiration = null;
 		this.gracePeriodLength = 0;
 		this.healPlayersAfterTime = 0;
 		this.beginBorderShrink = 0;
+		this.gameplayTime = 0;
 		this.scenarios = new ArrayList<ScenarioType>();
 		this.startingItems = new ArrayList<ItemStack>();
 		
@@ -95,6 +101,42 @@ public class Profile {
 	public int getMaxPlayers() {
 		return this.maxPlayers;
 	}
+	
+    /**
+     * Sets the team size.
+     * @param int teamSize
+     */
+    
+    public void setTeamSize(int teamSize) {
+        this.teamSize = teamSize;
+    }
+    
+    /**
+     * Fetches the team size.
+     * @return int
+     */
+    
+    public int getTeamSize() {
+        return this.teamSize;
+    }
+    
+    /**
+     * Sets if this server is private or not.
+     * @param flag
+     */
+    
+    public void setPrivate(boolean flag) {
+        this.isPrivate = flag;
+    }
+    
+    /**
+     * Fetches if this server is private or not.
+     * @return
+     */
+    
+    public boolean isPrivate() {
+        return this.isPrivate;
+    }
 	
 	/**
 	 * Sets the owner of this profile.
@@ -191,6 +233,24 @@ public class Profile {
 		return this.beginBorderShrink;
 	}
 	
+    /**
+     * Sets how long gameplay lasts. (in seconds)
+     * @param int gameTime
+     */
+    
+    public void setGameplayTime(int gameplayTime) {
+        this.gameplayTime = gameplayTime;
+    }
+    
+    /**
+     * Fetches how long a game lasts. (in seconds)
+     * @return int
+     */
+    
+    public int getGameplayTime() {
+        return this.gameplayTime;
+    }
+	
 	/**
 	 * Fetches the Scenarios selected for this profile.
 	 * @return ArrayList<ScenarioType>
@@ -261,6 +321,8 @@ public class Profile {
 		// Save profile settings.
 		profile.set("initMapSize", initMapSize);
 		profile.set("maxPlayers", maxPlayers);
+		profile.set("teamSize", teamSize);
+		profile.set("private", isPrivate);
 		profile.set("profileOwner", (owner == null) ? "null" : owner);
 		
 		// Save the date expiration.
@@ -276,6 +338,7 @@ public class Profile {
 		timings.set("gracePeriodLength", gracePeriodLength);
 		timings.set("healPlayersAfter", healPlayersAfterTime);
 		timings.set("beginBorderShrink", beginBorderShrink);
+		timings.set("gameplayTime", gameplayTime);
 		profile.set("timings", timings);
 		
 		// Let's save the profile.
@@ -303,6 +366,8 @@ public class Profile {
 		scenarios.clear();
 		initMapSize = profile.getInt("initMapSize");
 		maxPlayers = profile.getInt("maxPlayers");
+		teamSize = profile.getInt("teamSize");
+		isPrivate = profile.getBoolean("private");
 		owner = profile.getString("profileOwner");
 		expiration = null;
 		
@@ -328,6 +393,7 @@ public class Profile {
 		gracePeriodLength = timings.getInt("gracePeriodLength");
 		healPlayersAfterTime = timings.getInt("healPlayersAfter");
 		beginBorderShrink = timings.getInt("beginBorderShrink");
+		gameplayTime = timings.getInt("gameplayTime");
 		
 		// Let's load our scenarios.
 		for(String scenario : profile.getStringList("scenarios")) {

@@ -158,10 +158,11 @@ public class UHCScoreboard {
 	
 	public void build(final Player player) {
 		// Updating this to handle the uncolored lines.
-		scoreboard = (scoreboard == null) ? Bukkit.getScoreboardManager().getNewScoreboard() : scoreboard;
-		obj = scoreboard.registerNewObjective("board", "dummy");
-		obj.setDisplayName(ChatColor.translateAlternateColorCodes('&', title));
-		obj.setDisplaySlot(slot);
+	    scoreboard = (scoreboard == null) ? Bukkit.getScoreboardManager().getNewScoreboard() : scoreboard;
+        if(obj != null) obj.unregister();
+        obj = scoreboard.registerNewObjective("board", "dummy");
+        obj.setDisplayName(ChatColor.translateAlternateColorCodes('&', title));
+        obj.setDisplaySlot(slot);
 		organizeLines();
 		if(player != null) player.setScoreboard(scoreboard);
 	}

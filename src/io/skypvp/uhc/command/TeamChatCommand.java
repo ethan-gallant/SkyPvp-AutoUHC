@@ -13,6 +13,7 @@ public class TeamChatCommand extends CommandBase {
         super("teamchat");
         
         this.addAlias("tc");
+        this.setDescription(ChatColor.YELLOW + "Toggle team chat whilst in a team UHC game.");
         this.addRequirement(new InTeamGameRequirement());
         this.addRequirement(new PermissionRequirement("uhc.teamchat"));
     }

@@ -29,10 +29,11 @@ public class CommandPool implements Listener {
 	@EventHandler
 	public void onPlayerExecuteCommand(final PlayerCommandPreprocessEvent evt) {
 		final Player player = evt.getPlayer();
-		handleCommand(player, evt.getMessage());
+		boolean cancelled = handleCommand(player, evt.getMessage());
+		evt.setCancelled(!cancelled);
 	}
 	
-	private void handleCommand(final CommandSender sender, String msg) {
+	private boolean handleCommand(final CommandSender sender, String msg) {
 		String cmd = msg;
 		String[] args = null;
 		
@@ -50,10 +51,14 @@ public class CommandPool implements Listener {
 					if(!command.handleSubCommand(sender, args)) {
 						command.run(sender, args);
 					}
-					return;
+					return true;
+				}else {
+				    return false;
 				}
 			}
 		}
+		
+		return false;
 	}
 	
 	@EventHandler

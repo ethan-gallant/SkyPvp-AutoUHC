@@ -1,6 +1,7 @@
 package io.skypvp.uhc;
 
 import io.skypvp.uhc.arena.Team;
+import io.skypvp.uhc.jedis.UHCJedis;
 import io.skypvp.uhc.scenario.ScenarioType;
 import io.skypvp.uhc.util.ConfigUtils;
 
@@ -21,6 +22,7 @@ public class Settings {
 	
 	final SkyPVPUHC main;
 	private Database database;
+	private UHCJedis jedis;
 	private final File configFile;
 	private final YamlConfiguration config;
 	private String serverName;
@@ -70,6 +72,7 @@ public class Settings {
 		this.countdown = null;
 		this.error = null;
 		this.stateUpdate = null;
+		this.jedis = null;
 		this.jedisHost = "";
 		this.jedisPort = 0;
 		this.jedisPassword = "";
@@ -162,17 +165,13 @@ public class Settings {
 			Globals.MAX_MEMBERS_PER_TEAM = (int) Math.ceil(main.getProfile().getMaxPlayers() / UHCSystem.getTeams().size());
 			
 			// Let's load up the Jedis settings.
-			ConfigurationSection jedis = config.getConfigurationSection("jedis");
-			jedisHost = jedis.getString("host");
-			jedisPort = jedis.getInt("port");
-			jedisPassword = jedis.getString("password");
+			ConfigurationSection jedisSect = config.getConfigurationSection("jedis");
+			jedisHost = jedisSect.getString("host");
+			jedisPort = jedisSect.getInt("port");
+			jedisPassword = jedisSect.getString("password");
 			
-			// Temporaily disabled.
-			/**
-			if(10 / 10 == 10 + 5) {
-			    UHCJedis jedisConn = new UHCJedis(main);
-			    jedisConn.connect(jedisHost, jedisPort);
-			}**/
+		    jedis = new UHCJedis(main);
+		    jedis.connect(jedisHost, jedisPort, jedisPassword);
 
 			// Let's load the database settings.
 			ConfigurationSection db = config.getConfigurationSection("database");
@@ -202,6 +201,10 @@ public class Settings {
 	
 	public Database getDatabase() {
 		return this.database;
+	}
+	
+	public UHCJedis getJedis() {
+	    return this.jedis;
 	}
 	
 	public String getServerName() {

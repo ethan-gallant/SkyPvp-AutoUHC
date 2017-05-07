@@ -19,6 +19,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import net.md_5.bungee.api.ChatColor;
 
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -155,6 +157,10 @@ public class TrafficEventsListener implements Listener {
 					uhcPlayer.setScoreboard(board);
 				}
 			}
+			
+			World world = Bukkit.getWorld(Globals.LOBBY_WORLD_NAME);
+			player.getBukkitPlayer().teleport(world.getSpawnLocation());
+			main.getSettings().getJedis().announceServerDetails();
 	
 			new BukkitRunnable() {
 				

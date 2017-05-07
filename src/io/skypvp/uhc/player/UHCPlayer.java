@@ -35,6 +35,12 @@ public class UHCPlayer {
 	private boolean inGame;
 	private boolean inTeamChat;
 	
+	// Variables to handle combat-tagging.
+	private UHCPlayer combatTagger;
+	
+	// The time in milliseconds when this player was tagged.
+	private long tagTimeMs;
+	
 	public UHCPlayer(UUID id, int gamesPlayed, int gamesWon, int kills, int deaths) {
 		this.uuid = id;
 		this.state = PlayerState.ACTIVE;
@@ -48,6 +54,8 @@ public class UHCPlayer {
 		this.scoreboard = null;
 		this.inGame = true;
 		this.inTeamChat = false;
+		this.combatTagger = null;
+		this.tagTimeMs = 0;
 	}
 	
 	public void prepareForGame() {
@@ -168,6 +176,37 @@ public class UHCPlayer {
 	
 	public UUID getUUID() {
 		return this.uuid;
+	}
+	
+	/**
+	 * Sets the player that this UHCPlayer is in combat with.
+	 * Expects a valid UHCPlayer instance or null.
+	 * @param UHCPlayer p
+	 */
+	
+	public void setInCombatWith(UHCPlayer p) {
+	    this.combatTagger = p;
+	    this.tagTimeMs = (p != null) ? System.currentTimeMillis() : 0;
+	}
+	
+	/**
+	 * Returns if this player is in combat or not.
+	 * @return true/false flag
+	 */
+	
+	public boolean isInCombat() {
+	    if(combatTagger == null) return false;
+	    
+	    if(combatTagger != null) {
+	        if(System.currentTimeMillis() >= tagTimeMs + Globals.COMBAT_TAG_TIME) {
+	            setInCombatWith(null);
+	            return false;
+	        }
+	        
+	        return true;
+	    }
+	    
+	    return false;
 	}
 	
 	public Player getBukkitPlayer() {

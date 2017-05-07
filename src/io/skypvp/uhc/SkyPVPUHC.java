@@ -44,6 +44,9 @@ public class SkyPVPUHC extends JavaPlugin {
 			return;
 		}
 		
+		// We need to be able to send messages to BungeeCord.
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+		
 		ConfigUtils.main = this;
 		onlinePlayers = new HashMap<UUID, UHCPlayer>();
 		worldHandler = null;
@@ -75,7 +78,11 @@ public class SkyPVPUHC extends JavaPlugin {
 		if(isEnabled()) {
 			msgs = new Messages(this);
 			cmdPool = new CommandPool(this);
-			game = new UHCGame(this);
+	        game = new UHCGame(this);
+			
+            // Let's shake hands with Jedis.
+            settings.getJedis().handshake();
+
 			worldHandler = new WorldHandler(this);
 			UHCSystem.setLobbyTimer(this);
 			
@@ -104,6 +111,10 @@ public class SkyPVPUHC extends JavaPlugin {
 				sendConsoleMessage(ChatColor.DARK_RED + "Encountered an error while closing connection to MySQL database.");
 				e.printStackTrace();
 			}
+		}
+		
+		if(settings != null && settings.getJedis() != null) {
+		    settings.getJedis().farewell();
 		}
 	}
 	

@@ -7,6 +7,7 @@ import io.skypvp.uhc.arena.UHCGame;
 import io.skypvp.uhc.arena.UHCGame.GameState;
 import io.skypvp.uhc.player.UHCPlayer.PlayerState;
 import io.skypvp.uhc.player.event.UHCPlayerDamageEvent;
+import io.skypvp.uhc.player.event.UHCPlayerDamagedByUHCPlayerEvent;
 import io.skypvp.uhc.player.event.UHCPlayerDeathEvent;
 import io.skypvp.uhc.player.event.UHCPlayerKillUHCPlayerEvent;
 
@@ -15,10 +16,13 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import net.md_5.bungee.api.ChatColor;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -63,7 +67,7 @@ public class ArenaPlayerEventsListener implements Listener {
     public void onPlayerChat(AsyncPlayerChatEvent evt) {
         Player p = evt.getPlayer();
         UHCPlayer uhcPlayer = instance.getOnlinePlayers().get(p.getUniqueId());
-        if(uhcPlayer == null) return;
+        if(uhcPlayer == null || !uhcPlayer.isInTeamChat()) return;
         
         // If the player is spectating, we only want spectators to see the message.
         if(uhcPlayer.getState() == PlayerState.SPECTATING) {
@@ -84,9 +88,13 @@ public class ArenaPlayerEventsListener implements Listener {
         if(game.isTeamMatch() && game.getState().toIndex() > GameState.PREPARING.toIndex()) {
             // Great, the player is a team game that has already started and is past the "Preparing" stage.
             Team team = uhcPlayer.getTeam();
+            String teamColor = team.getName().substring(0, 2);
+            evt.setFormat(ChatColor.translateAlternateColorCodes('&', String.format("&7[%sTEAM&7] %s%s &7%s", teamColor,
+                    teamColor, ChatColor.stripColor(p.getDisplayName()), evt.getMessage())));
             
             if(team != null) {
                 evt.getRecipients().clear();
+                evt.getRecipients().add(p);
                 for(UHCPlayer member : team.getMembers()) {
                     if(member.getBukkitPlayer() != p) {
                         evt.getRecipients().add(member.getBukkitPlayer());
@@ -134,29 +142,59 @@ public class ArenaPlayerEventsListener implements Listener {
 	}
 	
 	@EventHandler
+	public void onUHCPlayerDamagedByUHCPlayer(UHCPlayerDamagedByUHCPlayerEvent evt) {
+	    UHCPlayer damaged = evt.getPlayer();
+	    UHCPlayer damager = evt.getDamager();
+	    EntityDamageEvent dmgEvt = evt.getDamageEvent();
+	    
+	    if(damaged.isInGame() && damager.isInGame()) {
+	        if(game.getState() == GameState.GRACE_PERIOD) {
+	            damager.getBukkitPlayer().sendMessage(instance.getMessages().getMessage("pvp-disabled"));
+	            dmgEvt.setCancelled(true);
+	            return;
+	        }else if(damaged.getTeam() != null && damager.getTeam() != null) {
+	            if(damaged.getTeam() == damager.getTeam()) {
+	                damager.getBukkitPlayer().sendMessage(instance.getMessages().getMessage("pvp-team"));
+	                dmgEvt.setCancelled(true);
+	                return;
+	            }
+	        }else {
+	            // The "damaged" player is in combat with "damager".
+	            damaged.setInCombatWith(damager);
+	        }
+	    }
+	}
+	
+	@EventHandler
 	public void onPlayerHurtPlayer(EntityDamageByEntityEvent evt) {
 		Entity ent = evt.getDamager();
 		Entity damaged = evt.getEntity();
 		
-		if(damaged instanceof Player && ent instanceof Player) {
-			Player hitter = (Player) ent;
-			Player hit = (Player) damaged;
-			UHCPlayer hitterUHC = instance.getOnlinePlayers().get(hitter.getUniqueId());
-			UHCPlayer hitUHC = instance.getOnlinePlayers().get(hit.getUniqueId());
-			
-			if(hitUHC != null && hitterUHC != null && hitUHC.isInGame() && hitterUHC.isInGame()) {
-				if(hitUHC.getTeam() != null && hitterUHC.getTeam() != null) {
-					if(hitUHC.getTeam() == hitterUHC.getTeam()) {
-						hitterUHC.getBukkitPlayer().sendMessage(instance.getMessages().getMessage("pvp-team"));
-						evt.setCancelled(true);
-						return;
-					}
-				}else if(game.getState() == GameState.GRACE_PERIOD) {
-					hitterUHC.getBukkitPlayer().sendMessage(instance.getMessages().getMessage("pvp-disabled"));
-					evt.setCancelled(true);
-					return;
-				}
-			}
+		if(damaged instanceof Player) {
+            Player hit = (Player) damaged;
+            UHCPlayer hitUHC = instance.getOnlinePlayers().get(hit.getUniqueId());
+            if(hitUHC == null) return;
+            
+		    if(ent instanceof Player) {
+	            Player hitter = (Player) ent;
+	            UHCPlayer hitterUHC = instance.getOnlinePlayers().get(hitter.getUniqueId());
+	            
+	            if(hitterUHC != null) {
+	                instance.getServer().getPluginManager().callEvent(new UHCPlayerDamagedByUHCPlayerEvent(hitUHC, hitterUHC, evt));
+	            }
+	            
+		    }else if(ent instanceof Projectile) {
+		        Projectile proj = (Projectile) ent;
+		        
+		        if(proj.getShooter() instanceof Player && evt.getDamage() > 0.0d) {
+		            Player hitter = (Player) proj.getShooter();
+	                UHCPlayer hitterUHC = instance.getOnlinePlayers().get(hitter.getUniqueId());
+	                
+		            if(hitter != hit && hitterUHC != null) {
+		                instance.getServer().getPluginManager().callEvent(new UHCPlayerDamagedByUHCPlayerEvent(hitUHC, hitterUHC, evt));
+		            }
+		        }
+		    }
 		}
 	}
 	

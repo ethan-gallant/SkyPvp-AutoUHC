@@ -31,7 +31,7 @@ public abstract class DropUpdaterScenario extends Scenario {
 
 	public abstract void unregisterEvents();
 	
-	public static ArrayList<ScenarioType> getDROP_UPDATE_ORDER() {
+	public static ArrayList<ScenarioType> getDropOrder() {
 		return DropUpdaterScenario.DROP_UPDATE_ORDER;
 	}
 

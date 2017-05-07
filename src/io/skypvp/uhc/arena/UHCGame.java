@@ -4,6 +4,8 @@ import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCScoreboard;
 import io.skypvp.uhc.UHCSystem;
+import io.skypvp.uhc.jedis.UHCJedis;
+import io.skypvp.uhc.jedis.UHCLobbyResponse;
 import io.skypvp.uhc.player.UHCPlayer;
 import io.skypvp.uhc.player.UHCPlayer.PlayerState;
 import io.skypvp.uhc.scenario.Scenario;
@@ -17,15 +19,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.concurrent.ThreadLocalRandom;
 
 import net.md_5.bungee.api.ChatColor;
 
-import org.bukkit.Bukkit;
 import org.bukkit.FireworkEffect;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
-import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
@@ -36,6 +37,8 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.util.Vector;
 
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import com.wimbli.WorldBorder.BorderData;
 
 public class UHCGame {
@@ -96,6 +99,7 @@ public class UHCGame {
 			
 			for(ItemStack item : main.getProfile().getStartingItems()) {
 			    player.getBukkitPlayer().getInventory().addItem(item.clone());
+			    System.out.println(item.getType());
 			}
 			
 			if(player.getTeam() != null) {
@@ -282,9 +286,9 @@ public class UHCGame {
     		        scenario.resetStats(player);
     		    }
     		}
+    		
+    	    enterSpectate(player);
 		}
-		
-		enterSpectate(player);
 		
 		player.setInGame(false);
 	}
@@ -308,8 +312,10 @@ public class UHCGame {
 		new BukkitRunnable() {
 			
 			public void run() {
-				player.getBukkitPlayer().setFlying(true);
-				player.getBukkitPlayer().setGameMode(GameMode.CREATIVE);
+			    if(player != null) {
+    				player.getBukkitPlayer().setFlying(true);
+    				player.getBukkitPlayer().setGameMode(GameMode.CREATIVE);
+			    }
 			}
 			
 		}.runTaskLater(main, 10L);
@@ -348,14 +354,14 @@ public class UHCGame {
 		initialPlayers = 0;
 		timer = TimerUtils.createTimer(main, "Preparing", main.getSettings().getFreezeTime());
 		
-		// Let's clear the players out if need-be.
+		// Let's send the players to a lobby, if need-be.
 		for(UHCPlayer p : getPlayers()) {
-			p.setState(PlayerState.ACTIVE);
-			p.prepareForGame();
-			
-			World lobby = Bukkit.getWorld(Globals.LOBBY_WORLD_NAME);
-			p.getBukkitPlayer().teleport(lobby.getSpawnLocation());
-			p.setInGame(false);
+		    ArrayList<UHCLobbyResponse> lobbies = main.getSettings().getJedis().getAvailableLobbies();
+		    UHCLobbyResponse lobby = lobbies.get(ThreadLocalRandom.current().nextInt(0, lobbies.size()));
+	        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+	        out.writeUTF("Connect");
+	        out.writeUTF(lobby.getName());
+	        p.getBukkitPlayer().sendPluginMessage(main, "BungeeCord", out.toByteArray());
 		}
 		
 		// Let's delete the UHC world.
@@ -408,6 +414,11 @@ public class UHCGame {
 		}else if(newState == GameState.DEATHMATCH) {
 			timer = TimerUtils.createTimer(main, "Deathmatch", main.getProfile().getGracePeriodLength());
 			timer.runTaskTimer(main, 0L, 20L);
+		}
+		
+		UHCJedis jedis = main.getSettings().getJedis();
+		if(jedis != null) {
+		    jedis.updateStatus();
 		}
 	}
 	

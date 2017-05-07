@@ -45,7 +45,18 @@ public class ConfigUtils {
         // Let's split for amount.
         String[] amtSplit = itemStackStr.toUpperCase().split("-");
         try {
-            Material mat = Material.valueOf(split[0]);
+            String useSplit = itemStackStr.toUpperCase();
+            if(itemStackStr.contains(":")) {
+               useSplit = split[0];
+            }else if(itemStackStr.contains("-")) {
+               useSplit = amtSplit[0];
+               System.out.println(amtSplit[0]);
+            }
+            
+            System.out.println(itemStackStr);
+            System.out.println(itemStackStr.contains("-"));
+            
+            Material mat = Material.valueOf(useSplit);
             short data = 0;
             if(split.length == 2) {
                 data = Short.valueOf(split[1]);
