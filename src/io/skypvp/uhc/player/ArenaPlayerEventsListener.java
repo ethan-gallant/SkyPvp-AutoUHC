@@ -1,6 +1,7 @@
 package io.skypvp.uhc.player;
 
 import io.skypvp.uhc.Globals;
+import io.skypvp.uhc.Messages;
 import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.arena.UHCGame;
@@ -69,6 +70,22 @@ public class ArenaPlayerEventsListener implements Listener {
         UHCPlayer uhcPlayer = instance.getOnlinePlayers().get(p.getUniqueId());
         if(uhcPlayer == null || !uhcPlayer.isInTeamChat()) return;
         
+        Messages msgs = instance.getMessages();
+        String format = "";
+        
+        // Let's add the host prefix if needed.
+        String matchOwner = instance.getProfile().getOwner();
+        if(matchOwner != null && matchOwner.equals(uhcPlayer.uuid)) {
+            format = format.concat(msgs.getRawMessage("hostPrefix"));
+        }
+        
+        // Let's setup the spectate prefix.
+        String spectatePrefix = msgs.getRawMessage("spectatePrefix");
+        
+        // Let's setup the wins suffix.
+        String suffix = instance.getMessages().getRawMessage("nameSuffix");
+        suffix = suffix.replaceAll("\\{wins\\}", String.valueOf(uhcPlayer.getGamesWon()));
+        
         // If the player is spectating, we only want spectators to see the message.
         if(uhcPlayer.getState() == PlayerState.SPECTATING) {
             Iterator<Player> pIterator = evt.getRecipients().iterator();
@@ -80,6 +97,20 @@ public class ArenaPlayerEventsListener implements Listener {
                 }
             }
             
+            // Let's setup the format.
+            format = format.concat(spectatePrefix);
+            
+            if(game.isTeamMatch()) {
+                format = format.concat(" " + uhcPlayer.getTeam().getName().substring(0, 2));
+            }else {
+                format = format.concat(" &a");
+            }
+            
+            format = format.concat(ChatColor.stripColor(p.getDisplayName()));
+            format = format.concat(suffix);
+            format = format.concat(String.format(" &7%s", evt.getMessage()));
+            evt.setFormat(ChatColor.translateAlternateColorCodes('&', format));
+            
             // We don't care if this player is in a team game or whatever. Only spectators can see this message.
             // We're done.
             return;
@@ -89,8 +120,9 @@ public class ArenaPlayerEventsListener implements Listener {
             // Great, the player is a team game that has already started and is past the "Preparing" stage.
             Team team = uhcPlayer.getTeam();
             String teamColor = team.getName().substring(0, 2);
-            evt.setFormat(ChatColor.translateAlternateColorCodes('&', String.format("&7[%sTEAM&7] %s%s &7%s", teamColor,
-                    teamColor, ChatColor.stripColor(p.getDisplayName()), evt.getMessage())));
+            
+            evt.setFormat(ChatColor.translateAlternateColorCodes('&', String.format("&7[%sTEAM&7] %s%s%s &7%s", teamColor,
+                    teamColor, ChatColor.stripColor(p.getDisplayName()), suffix, evt.getMessage())));
             
             if(team != null) {
                 evt.getRecipients().clear();
@@ -101,7 +133,20 @@ public class ArenaPlayerEventsListener implements Listener {
                     }
                 }
             }
+            
+            return;
         }
+        
+        if(game.isTeamMatch()) {
+            format = format.concat(" " + uhcPlayer.getTeam().getName().substring(0, 2));
+        }else {
+            format = format.concat(" &a");
+        }
+        
+        format = format.concat(ChatColor.stripColor(p.getDisplayName()));
+        format = format.concat(suffix);
+        format = format.concat(String.format(" &7%s", evt.getMessage()));
+        evt.setFormat(ChatColor.translateAlternateColorCodes('&', format));
     }
 	
 	@EventHandler

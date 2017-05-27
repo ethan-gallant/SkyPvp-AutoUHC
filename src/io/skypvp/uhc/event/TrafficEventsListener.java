@@ -1,6 +1,5 @@
 package io.skypvp.uhc.event;
 
-import io.skypvp.uhc.Database;
 import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCScoreboard;
@@ -9,8 +8,11 @@ import io.skypvp.uhc.arena.Profile;
 import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.arena.UHCGame;
 import io.skypvp.uhc.arena.UHCGame.GameState;
+import io.skypvp.uhc.database.DatabaseQuery;
+import io.skypvp.uhc.database.HikariDatabase;
 import io.skypvp.uhc.player.UHCPlayer;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -35,7 +37,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class TrafficEventsListener implements Listener {
 	
 	final SkyPVPUHC main;
-	final Database database;
+	final HikariDatabase database;
 	
 	public TrafficEventsListener(SkyPVPUHC instance) {
 		this.main = instance;
@@ -68,20 +70,30 @@ public class TrafficEventsListener implements Listener {
 		new BukkitRunnable() {
 			
 			public void run() {
-				ResultSet rs = database.query(String.format("SELECT * FROM %s WHERE UUID='%s';", Globals.TABLE_NAME, p.getUniqueId()));
+			    DatabaseQuery query = database.query(String.format("SELECT * FROM %s WHERE UUID='%s';", Globals.TABLE_NAME, p.getUniqueId())); 
+				ResultSet rs = query.getResultSet();
 				UHCPlayer player;
+				
+                // Let's close the connection that query used.
+                database.closeConnection(query.getConnection());
 				
 				// We need to handle creating new profiles and obtaining them.
 				if(rs == null) {
 					try {
 						String update = String.format("INSERT INTO %s (UUID, GAMES_PLAYED, GAMES_WON, KILLS, DEATHS) VALUES (?, 0, 0, 0, 0)",
 								Globals.TABLE_NAME);
-						PreparedStatement statement = database.getConnection().prepareStatement(update);
-						statement.setString(1, p.getUniqueId().toString());
-						statement.execute();
 						
-						player = new UHCPlayer(p.getUniqueId(), 0, 0, 0, 0);
-						main.getOnlinePlayers().put(p.getUniqueId(), player);
+						Connection conn = database.obtainConnection();
+						
+						if(conn != null) {
+    						PreparedStatement statement = conn.prepareStatement(update);
+    						statement.setString(1, p.getUniqueId().toString());
+    						statement.executeUpdate();
+    						
+    						player = new UHCPlayer(p.getUniqueId(), 0, 0, 0, 0);
+                            main.getOnlinePlayers().put(p.getUniqueId(), player);
+    						database.closeConnection(conn);
+						}
 					} catch (SQLException e) {
 						main.sendConsoleMessage(ChatColor.DARK_RED + "Encountered an error while creating row for new player.");
 						e.printStackTrace();

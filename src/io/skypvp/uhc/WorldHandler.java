@@ -39,7 +39,7 @@ public class WorldHandler {
 	public WorldHandler(SkyPVPUHC instance) { 
 		this.main = instance;
 		this.worldBorder = instance.getWorldBorder();
-		this.multiverse = instance.getMultiverse();
+		this.multiverse = null; //instance.getMultiverse();
 		this.worldMgr = multiverse.getMVWorldManager();
 		this.seeds = instance.getSettings().getSeeds();
 		this.gameWorld = null;
@@ -56,12 +56,6 @@ public class WorldHandler {
 		}
 		
 		this.lastSeed = getStoredSeed();
-		
-		if(worldMgr.getMVWorld(Globals.GAME_WORLD_NAME) != null) {
-			deleteGameWorld();
-		}
-		
-		createGameWorld();
 	}
 	
 	private String getStoredSeed() {
@@ -192,6 +186,10 @@ public class WorldHandler {
 	
 	public String getLastSeed() {
 		return this.lastSeed;
+	}
+	
+	public MVWorldManager getWorldManager() {
+	    return this.worldMgr;
 	}
 	
 	public MultiverseWorld getGameWorld() {

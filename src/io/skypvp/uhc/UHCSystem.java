@@ -6,8 +6,6 @@ import io.skypvp.uhc.arena.UHCGame.GameState;
 import io.skypvp.uhc.menu.Menu;
 import io.skypvp.uhc.player.UHCPlayer;
 import io.skypvp.uhc.scenario.ScenarioDrops;
-import io.skypvp.uhc.timer.MatchTimer;
-import io.skypvp.uhc.timer.TimerUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,20 +26,19 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 
 public class UHCSystem {
 	
 	private static SkyPVPUHC main;
 	private static HashSet<Team> teams = new HashSet<Team>();
 	private static HashSet<ItemStack> restrictedItems = new HashSet<ItemStack>();
-	private static MatchTimer lobbyTimer;
 	private static HashMap<Block, ScenarioDrops> scenarioDrops = new HashMap<Block, ScenarioDrops>();
 	private static ArrayList<UUID> forcestartVotes;
 	public static ScoreboardTeam GHOST_TEAM;
@@ -121,17 +118,8 @@ public class UHCSystem {
 	    return false;
 	}
 	
-	public static void setLobbyTimer(SkyPVPUHC instance) {
-		UHCSystem.main = instance;
-		lobbyTimer = TimerUtils.createTimer(instance, "Starting", main.getSettings().getStartTime());
-	}
-	
-	public static MatchTimer getLobbyTimer() {
-		return UHCSystem.lobbyTimer;
-	}
-	
 	public static Location getRandomSpawnPoint(double minX, double maxX, double minZ, double maxZ) {
-		World world = main.getWorldHandler().getGameWorld().getCBWorld();
+		World world = Bukkit.getWorld(Globals.GAME_WORLD_NAME);//main.getWorldManager().getWorld();
 		double x, z;
 		Block highestBlock;
 		

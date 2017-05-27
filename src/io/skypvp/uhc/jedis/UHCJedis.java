@@ -1,11 +1,14 @@
 package io.skypvp.uhc.jedis;
 
+import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.arena.Profile;
 import io.skypvp.uhc.arena.UHCGame;
 import io.skypvp.uhc.scenario.ScenarioType;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import net.md_5.bungee.api.ChatColor;
@@ -82,7 +85,6 @@ public class UHCJedis {
             if(exists) {
                 p.del(serverName);
                 p.srem(SERVER_DATA_MAP, serverName);
-                main.sendConsoleMessage(ChatColor.GREEN + "Success!");
             }else {
                 main.sendConsoleMessage(ChatColor.RED + String.format("Redis: This server is not a member of the '%s' set.", SERVER_DATA_MAP));
             }
@@ -90,6 +92,12 @@ public class UHCJedis {
         
         close();
     }
+    
+    /**
+     * Returns an {@link java.util.ArrayList} of all available UHC lobbies
+     * that aren't full.
+     * @return {@link java.util.ArrayList} of {@link io.skypvp.uhc.jedis.UHCLobbyResponse}
+     */
     
     public ArrayList<UHCLobbyResponse> getAvailableLobbies() {
         ArrayList<UHCLobbyResponse> responses = new ArrayList<UHCLobbyResponse>();
@@ -105,16 +113,28 @@ public class UHCJedis {
             if(setExists) {
                 Set<String> serverNames = respSrvNames.get();
                 for(String srvName : serverNames) {
-                    //Response<Map<String, String>> data = p.hgetAll(srvName);
-                    responses.add(new UHCLobbyResponse(srvName, null));
+                    Response<Map<String, String>> data = p.hgetAll(srvName);
+                    responses.add(new UHCLobbyResponse(srvName, data));
                 }
 
                 p.sync();
                 
-                /*
-                for(UHCLobbyResponse response : responses) {
-                    response.setData(response.getResponseData().get());
-                }*/
+                Iterator<UHCLobbyResponse> iterator = responses.iterator();
+                
+                while(iterator.hasNext()) {
+                    UHCLobbyResponse response = iterator.next();
+                    Map<String, String> data = response.getResponseData().get();
+                    int onlinePlayers = Integer.valueOf(data.get(ONLINE_PLAYERS_KEY));
+                    int maxPlayers = Integer.valueOf(data.get(MAX_PLAYERS_KEY));
+                    
+                    // Let's verify that this lobby isn't full.
+                    if(onlinePlayers >= maxPlayers) {
+                        iterator.remove();
+                    }else {
+                        // Let's prepare this lobby for use.
+                        response.setData(data);
+                    }
+                }
             }else {
                 main.sendConsoleMessage(ChatColor.RED + "Redis doesn't have a list of UHC servers.");
             }
@@ -158,8 +178,12 @@ public class UHCJedis {
         p.hset(serverName, MAX_PLAYERS_KEY, String.valueOf(profile.getMaxPlayers()));
         
         // Let's let our UHC system know that we've updated some details.
-        /**
-        Jedis publisher = new Jedis();
+        p.publish("uhc", String.format("%s %d", serverName, Globals.JEDIS_STATUS_UPDATE));
+        p.sync();
+        
+        // Let's let our UHC system know that we've updated some details.
+        /*Jedis publisher = new Jedis();
+        publisher.connect();
         if(!password.isEmpty()) publisher.auth(password);
         publisher.publish("uhc", String.format("%s %d", serverName, Globals.JEDIS_STATUS_UPDATE));
         publisher.close();*/
@@ -211,11 +235,12 @@ public class UHCJedis {
             if(exists) {
                 jedis.hset(serverName, GAME_STATE_KEY, String.valueOf(main.getGame().getState().toIndex()));
                 
-                /*
+
                 Jedis publisher = new Jedis();
+                publisher.connect();
                 if(!password.isEmpty()) publisher.auth(password);
                 publisher.publish("uhc", String.format("%s %d", serverName, Globals.JEDIS_STATUS_UPDATE));
-                publisher.close();*/
+                publisher.close();
             }else {
                 main.sendConsoleMessage(ChatColor.RED + "Attempted to update status within redis hash while server is not a member of 'uhcServers' set within redis.");
                 main.sendConsoleMessage(ChatColor.RED + "Maybe tried to update status after server closed?");
@@ -226,6 +251,8 @@ public class UHCJedis {
     public void close() {
         if(pool != null) {
             pool.destroy();
+            pool.close();
+            main.sendConsoleMessage(ChatColor.GREEN + "Closed connection to redis!");
         }
     }
 }

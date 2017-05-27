@@ -4,8 +4,8 @@ import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCScoreboard;
 import io.skypvp.uhc.UHCSystem;
+import io.skypvp.uhc.arena.state.GameStateManager;
 import io.skypvp.uhc.jedis.UHCJedis;
-import io.skypvp.uhc.jedis.UHCLobbyResponse;
 import io.skypvp.uhc.player.UHCPlayer;
 import io.skypvp.uhc.player.UHCPlayer.PlayerState;
 import io.skypvp.uhc.scenario.Scenario;
@@ -18,8 +18,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.concurrent.ThreadLocalRandom;
 
 import net.md_5.bungee.api.ChatColor;
 
@@ -37,8 +35,6 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.util.Vector;
 
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import com.wimbli.WorldBorder.BorderData;
 
 public class UHCGame {
@@ -58,6 +54,7 @@ public class UHCGame {
 	}
 	
 	final SkyPVPUHC main;
+	final GameStateManager gsm;
 	private GameState state;
 	private HashSet<Scenario> scenarios;
 	private MatchTimer timer;
@@ -70,6 +67,7 @@ public class UHCGame {
 	
 	public UHCGame(SkyPVPUHC instance) {
 		this.main = instance;
+		this.gsm = main.getGameStateManager();
 		this.state = GameState.WAITING;
 		this.scenarios = new HashSet<Scenario>();
 		this.isTeamMatch = true;
@@ -77,9 +75,6 @@ public class UHCGame {
 		
 		// Let's setup the timer.
 		this.timer = TimerUtils.createTimer(main, "Preparing", main.getSettings().getFreezeTime());
-		
-		// Let's register arena events.
-		main.getServer().getPluginManager().registerEvents(new ArenaEventsListener(main, this), main);
 	}
 	
 	/**
@@ -89,7 +84,7 @@ public class UHCGame {
 	
 	public void startMatch() {
 		setState(GameState.PREPARING);
-		main.getWorldHandler().getGameWorld().getCBWorld().setTime(500L);
+		//main.getWorldHandler().getGameWorld().getCBWorld().setTime(500L);
 		
 		// Let's handle the players.
 		for(UHCPlayer player : main.getOnlinePlayers().values()) {
@@ -158,7 +153,7 @@ public class UHCGame {
 	
 	public void cancelStart() {
 		// Let's stop the timer.
-		UHCSystem.getLobbyTimer().requestCancel();
+		gsm.getTimer().requestCancel();
 		setState(GameState.WAITING);
 		
 		String msg = main.getMessages().getRawMessage("not-enough-players");
@@ -340,7 +335,6 @@ public class UHCGame {
 	}
 	
 	public void reset() {
-		main.sendConsoleMessage(ChatColor.YELLOW + "Resetting game system...");
 		setState(GameState.WAITING);
 		
 		// Let's clear up the scenarios.
@@ -353,29 +347,6 @@ public class UHCGame {
 		// Let's reset our timers.
 		initialPlayers = 0;
 		timer = TimerUtils.createTimer(main, "Preparing", main.getSettings().getFreezeTime());
-		
-		// Let's send the players to a lobby, if need-be.
-		for(UHCPlayer p : getPlayers()) {
-		    ArrayList<UHCLobbyResponse> lobbies = main.getSettings().getJedis().getAvailableLobbies();
-		    UHCLobbyResponse lobby = lobbies.get(ThreadLocalRandom.current().nextInt(0, lobbies.size()));
-	        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-	        out.writeUTF("Connect");
-	        out.writeUTF(lobby.getName());
-	        p.getBukkitPlayer().sendPluginMessage(main, "BungeeCord", out.toByteArray());
-		}
-		
-		// Let's delete the UHC world.
-		main.getWorldHandler().deleteGameWorld();
-		main.getWorldHandler().createGameWorld();
-		
-		// Let's reset the lobby timer.
-		UHCSystem.setLobbyTimer(main);
-		
-		Iterator<UHCPlayer> players = main.getOnlinePlayers().values().iterator();
-		while(players.hasNext()) {
-			players.next().getBukkitPlayer().kickPlayer("RECONNECT for a new round.");
-			players.remove();
-		}
 	}
 	
 	public void setState(GameState newState) {
@@ -384,8 +355,8 @@ public class UHCGame {
 		
 		if(newState == GameState.STARTING) {
 			UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("lobby-timer-begun"), main.getSettings().getStateUpdateSound());
-			UHCSystem.getLobbyTimer().reset();
-			UHCSystem.getLobbyTimer().runTaskTimer(main, 0L, 20L);
+			gsm.getTimer().reset();
+			gsm.getTimer().runTaskTimer(main, 0L, 20L);
 		}else if(newState == GameState.PREPARING) {
 			UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("welcome"), main.getSettings().getStateUpdateSound());
 		}else if(newState == GameState.GRACE_PERIOD) {
@@ -402,7 +373,7 @@ public class UHCGame {
 			timer.runTaskTimer(main, 0L, 20L);
 			UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("gracePeriodBegin"), main.getSettings().getStateUpdateSound());
 		}else if(newState == GameState.PVP) {
-			main.getWorldHandler().setPVP(true);
+			//main.getWorldHandler().setPVP(true);
 			int shrinkTime = main.getProfile().getBeginBorderShrinkTime();
 			if(prevState == GameState.PVP) {
 				shrinkTime = main.getSettings().getBorderShrinkEveryTime();

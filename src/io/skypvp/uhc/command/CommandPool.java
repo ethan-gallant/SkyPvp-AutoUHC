@@ -15,11 +15,16 @@ import org.bukkit.event.server.ServerCommandEvent;
 public class CommandPool implements Listener {
 	
 	final SkyPVPUHC main;
+	private final SurfaceCommand surfCmd;
 	private static HashSet<CommandBase> commands;
 	
 	public CommandPool(final SkyPVPUHC instance) {
 		this.main = instance;
 		CommandPool.commands = new HashSet<CommandBase>();
+		this.surfCmd = new SurfaceCommand(instance);
+		
+		// Let's add the surface command.
+		commands.add(surfCmd);
 		
 		// Let's add the team chat command.
 		TeamChatCommand tcCmd = new TeamChatCommand();
@@ -29,8 +34,7 @@ public class CommandPool implements Listener {
 	@EventHandler
 	public void onPlayerExecuteCommand(final PlayerCommandPreprocessEvent evt) {
 		final Player player = evt.getPlayer();
-		boolean cancelled = handleCommand(player, evt.getMessage());
-		evt.setCancelled(!cancelled);
+		handleCommand(player, evt.getMessage());
 	}
 	
 	private boolean handleCommand(final CommandSender sender, String msg) {
@@ -51,6 +55,7 @@ public class CommandPool implements Listener {
 					if(!command.handleSubCommand(sender, args)) {
 						command.run(sender, args);
 					}
+					
 					return true;
 				}else {
 				    return false;
@@ -73,5 +78,9 @@ public class CommandPool implements Listener {
 	
 	public HashSet<CommandBase> getCommands() {
 		return CommandPool.commands;
+	}
+	
+	public SurfaceCommand getSurfaceCommand() {
+	    return this.surfCmd;
 	}
 }

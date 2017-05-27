@@ -50,11 +50,11 @@ public class ConfigUtils {
                useSplit = split[0];
             }else if(itemStackStr.contains("-")) {
                useSplit = amtSplit[0];
-               System.out.println(amtSplit[0]);
+               //System.out.println(amtSplit[0]);
             }
             
-            System.out.println(itemStackStr);
-            System.out.println(itemStackStr.contains("-"));
+            //System.out.println(itemStackStr);
+            //System.out.println(itemStackStr.contains("-"));
             
             Material mat = Material.valueOf(useSplit);
             short data = 0;

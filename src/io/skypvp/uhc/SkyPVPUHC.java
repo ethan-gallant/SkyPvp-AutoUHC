@@ -1,22 +1,25 @@
 package io.skypvp.uhc;
 
+import io.skypvp.uhc.arena.ArenaEventsListener;
 import io.skypvp.uhc.arena.Profile;
 import io.skypvp.uhc.arena.UHCGame;
+import io.skypvp.uhc.arena.state.GameStateManager;
 import io.skypvp.uhc.command.CommandPool;
 import io.skypvp.uhc.event.TrafficEventsListener;
 import io.skypvp.uhc.player.ArenaPlayerEventsListener;
 import io.skypvp.uhc.player.UHCPlayer;
 import io.skypvp.uhc.util.ConfigUtils;
 
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.UUID;
 
 import net.md_5.bungee.api.ChatColor;
+import net.milkbowl.vault.Vault;
+import net.milkbowl.vault.economy.Economy;
 
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.onarandombox.MultiverseCore.MultiverseCore;
@@ -27,35 +30,85 @@ public class SkyPVPUHC extends JavaPlugin {
 	private Settings settings;
 	private Profile profile;
 	private Messages msgs;
-	private MultiverseCore multiverse;
-	private WorldHandler worldHandler;
-	private WorldBorder worldBorder;
+	private WorldHandler worldHdl;
 	private CommandPool cmdPool;
+	private GameStateManager gsm;
+	
 	public static UHCGame game;
 	public static HashMap<UUID, UHCPlayer> onlinePlayers;
 	
+	private boolean canContinue;
+	
+	// Dependencies
+    private WorldBorder worldBorder;
+    private Economy economy;
+	
+	static {
+	    onlinePlayers = new HashMap<UUID, UHCPlayer>();
+	}
+	
+	public void onLoad() {
+	    ConfigUtils.main = this;
+	    canContinue = true;
+	    
+	    // Let's instantiate a Settings, Profile, and Messages object.
+	    settings = new Settings(this);
+	    profile = new Profile(this);
+	    msgs = new Messages(this);
+        gsm = new GameStateManager(this);
+	    
+        settings.load();
+	}
+	
 	public void onEnable() {
+	    if(!canContinue) {
+	        setEnabled(false);
+	        return;
+	    }
+	    
 		// We're going to require the lobby world to be called a certain name.
-		if(Bukkit.getWorld(Globals.LOBBY_WORLD_NAME) == null) {
+		if(getServer().getWorld(Globals.LOBBY_WORLD_NAME) == null) {
 			sendConsoleMessage(ChatColor.DARK_RED + 
 				String.format("Your main UHC lobby world must be called '%s' in order for this plugin to work correctly.", 
 			Globals.LOBBY_WORLD_NAME));
 			disable();
 			return;
 		}
+	    
+        cmdPool = new CommandPool(this);
+        worldHdl = new WorldHandler(this);
 		
 		// We need to be able to send messages to BungeeCord.
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
-		
-		ConfigUtils.main = this;
-		onlinePlayers = new HashMap<UUID, UHCPlayer>();
-		worldHandler = null;
-		multiverse = (MultiverseCore) getRequiredDependency("Multiverse-Core", MultiverseCore.class);
+        
 		worldBorder = (WorldBorder) getRequiredDependency("WorldBorder", WorldBorder.class);
-		settings = new Settings(this);
-		profile = new Profile(this);
-		msgs = new Messages(this);
-		settings.load();
+		
+		// Let's make sure we have Multiverse-Core.
+		getRequiredDependency("Multiverse-Core", MultiverseCore.class);
+		
+		// This makes sure we have Vault.
+		JavaPlugin vault = getRequiredDependency("Vault", Vault.class);
+		
+		// Let's setup the economy.
+		if(vault != null) {
+		    RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+		    
+		    if(rsp != null) {
+		        economy = rsp.getProvider();
+		        sendConsoleMessage(ChatColor.GREEN + String.format("Hooked into %s!", economy.getName()));
+		    }else {
+		        sendConsoleMessage(ChatColor.RED + "You must have an economy plugin installed to use this plugin!");
+		        disable();
+		    }
+		}
+		
+		if(isEnabled()) {
+            // We're register our events.
+            getServer().getPluginManager().registerEvents(new ArenaEventsListener(this, game), this);
+            getServer().getPluginManager().registerEvents(new TrafficEventsListener(this), this);
+            getServer().getPluginManager().registerEvents(new ArenaPlayerEventsListener(this), this);
+            getServer().getPluginManager().registerEvents(cmdPool, this);
+		}
 	}
 	
 	public JavaPlugin getRequiredDependency(final String name, final Class<? extends JavaPlugin> returnType) {
@@ -75,21 +128,11 @@ public class SkyPVPUHC extends JavaPlugin {
 	}
 	
 	public void databaseConnected() {
-		if(isEnabled()) {
-			msgs = new Messages(this);
-			cmdPool = new CommandPool(this);
+		if(canContinue) {
 	        game = new UHCGame(this);
-			
+	        
             // Let's shake hands with Jedis.
             settings.getJedis().handshake();
-
-			worldHandler = new WorldHandler(this);
-			UHCSystem.setLobbyTimer(this);
-			
-			// We're listening for join and leave events for database and arena purposes.
-			getServer().getPluginManager().registerEvents(new TrafficEventsListener(this), this);
-			getServer().getPluginManager().registerEvents(new ArenaPlayerEventsListener(this), this);
-			getServer().getPluginManager().registerEvents(cmdPool, this);
 		}
 	}
 	
@@ -105,9 +148,9 @@ public class SkyPVPUHC extends JavaPlugin {
 		
 		if(settings != null && settings.getDatabase() != null) {
 			try {
-				settings.getDatabase().getConnection().close();
+				settings.getDatabase().close();
 				sendConsoleMessage(ChatColor.DARK_GREEN + "Successfully closed connection to MySQL database.");
-			} catch (SQLException | NullPointerException e) {
+			} catch (NullPointerException e) {
 				sendConsoleMessage(ChatColor.DARK_RED + "Encountered an error while closing connection to MySQL database.");
 				e.printStackTrace();
 			}
@@ -118,9 +161,19 @@ public class SkyPVPUHC extends JavaPlugin {
 		}
 	}
 	
+	/**
+	 * Disables the plugin from being enabled or disables the plugin
+	 * if it's enabled.
+	 */
+	
 	public void disable() {
 		sendConsoleMessage(ChatColor.DARK_RED + "Disabling...");
-		setEnabled(false);
+		
+		if(isEnabled()) {
+		    setEnabled(false);
+		}
+		
+		canContinue = false;
 	}
 	
 	public Settings getSettings() {
@@ -135,16 +188,24 @@ public class SkyPVPUHC extends JavaPlugin {
 		return this.msgs;
 	}
 	
-	public MultiverseCore getMultiverse() {
-		return this.multiverse;
-	}
-	
-	public WorldHandler getWorldHandler() {
-		return this.worldHandler;
+	public CommandPool getCommandPool() {
+	    return this.cmdPool;
 	}
 	
 	public WorldBorder getWorldBorder() {
 		return this.worldBorder;
+	}
+	
+	public WorldHandler getWorldHandler() {
+	    return this.worldHdl;
+	}
+	
+	public GameStateManager getGameStateManager() {
+	    return this.gsm;
+	}
+	
+	public Economy getEconomy() {
+	    return this.economy;
 	}
 	
 	public UHCGame getGame() {

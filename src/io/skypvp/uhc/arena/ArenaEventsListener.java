@@ -183,7 +183,7 @@ public class ArenaEventsListener implements Listener {
 					borderX -= 50;
 				}
 				
-				main.getWorldHandler().setBorder(borderX, false);
+				//main.getWorldHandler().setBorder(borderX, false);
 				border = main.getWorldBorder().getWorldBorder(Globals.GAME_WORLD_NAME);
 				double minX = border.getX() - border.getRadiusX();
 				double maxX = border.getX() + border.getRadiusX();
@@ -210,7 +210,7 @@ public class ArenaEventsListener implements Listener {
 				game.reset();
 			}
 			
-		}else if(timer == UHCSystem.getLobbyTimer()) {
+		}else if(timer.getName().equals("Starting")) {
 			game.startMatch();
 		}
 	}

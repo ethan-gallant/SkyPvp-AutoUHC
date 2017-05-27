@@ -2,6 +2,7 @@ package io.skypvp.uhc;
 
 import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.arena.UHCGame.GameState;
+import io.skypvp.uhc.database.HikariDatabase;
 import io.skypvp.uhc.player.UHCPlayer;
 import io.skypvp.uhc.timer.MatchTimer;
 
@@ -21,7 +22,7 @@ import org.bukkit.scoreboard.Scoreboard;
 public class UHCScoreboard {
 	
 	final SkyPVPUHC main;
-	final Database database;
+	final HikariDatabase database;
 	final HashMap<Integer, String> lines;
 	private final String title, scoreboardType;
 	private DisplaySlot slot;
@@ -46,7 +47,7 @@ public class UHCScoreboard {
 	
 	private String handleTimerString(MatchTimer timer) {
 		String clockTime = timer.toString();
-		if(timer == UHCSystem.getLobbyTimer()) {
+		if(timer.getName().equals("Starting")) {
 			if(main.getGame().getState() != GameState.STARTING) {
 				clockTime = "Waiting...";
 				return clockTime;
@@ -59,7 +60,7 @@ public class UHCScoreboard {
 			clockTime = ChatColor.GREEN + clockTime;
 		}
 		
-		if(timer == UHCSystem.getLobbyTimer()) {
+		if(timer.getName().equals("Starting")) {
 			return timer.getName().concat(": ").concat(clockTime);
 		}else {
 			return clockTime;
@@ -87,7 +88,7 @@ public class UHCScoreboard {
 				if(!main.getGame().getTimer().getName().equalsIgnoreCase("Game Over")) {
 					line = line.replaceAll("\\{timer\\}", handleTimerString(main.getGame().getTimer()));
 				}
-				line = line.replaceAll("\\{lobbyTimer\\}", handleTimerString(UHCSystem.getLobbyTimer()));
+				line = line.replaceAll("\\{lobbyTimer\\}", handleTimerString(main.getGameStateManager().getTimer()));
 				line = line.replaceAll("\\{mode\\}", (main.getGame().isTeamMatch()) ? main.getMessages().getRawMessage("team") : main.getMessages().getRawMessage("solo"));
 				addLine(ChatColor.translateAlternateColorCodes('&', line));
 				

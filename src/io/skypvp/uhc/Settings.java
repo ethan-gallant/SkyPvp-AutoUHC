@@ -1,12 +1,12 @@
 package io.skypvp.uhc;
 
 import io.skypvp.uhc.arena.Team;
+import io.skypvp.uhc.database.HikariDatabase;
 import io.skypvp.uhc.jedis.UHCJedis;
 import io.skypvp.uhc.scenario.ScenarioType;
 import io.skypvp.uhc.util.ConfigUtils;
 
 import java.io.File;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 
@@ -16,12 +16,11 @@ import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 
 public class Settings {
 	
 	final SkyPVPUHC main;
-	private Database database;
+	private HikariDatabase database;
 	private UHCJedis jedis;
 	private final File configFile;
 	private final YamlConfiguration config;
@@ -180,26 +179,12 @@ public class Settings {
 			String dbUsername = db.getString("username");
 			String dbPassword = db.getString("password");
 			String dbDatabase = db.getString("database");
-			database = new Database(main, dbHost, dbPort, dbUsername, dbPassword, dbDatabase);
-			
-			new BukkitRunnable() {
-				
-				public void run() {
-					try {
-						database.openConnection();
-						if(!database.tableExists()) database.createTable();
-					} catch (SQLException e) {
-						main.sendConsoleMessage(ChatColor.DARK_RED + "Failed to connect to MySQL database. Are your settings correct in the config?");
-						e.printStackTrace();
-						main.disable();
-					}
-				}
-				
-			}.runTaskAsynchronously(main);
+			database = new HikariDatabase(main, dbUsername, dbPassword, dbHost, dbPort, dbDatabase);
+			database.connect();
 		}
 	}
 	
-	public Database getDatabase() {
+	public HikariDatabase getDatabase() {
 		return this.database;
 	}
 	
