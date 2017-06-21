@@ -35,26 +35,26 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class TrafficEventsListener implements Listener {
-	
+
 	final SkyPVPUHC main;
 	final HikariDatabase database;
-	
+
 	public TrafficEventsListener(SkyPVPUHC instance) {
 		this.main = instance;
 		this.database = main.getSettings().getDatabase();
 	}
-	
+
 	@EventHandler
 	public void onPlayerDropItem(PlayerDropItemEvent evt) {
 		ItemStack item = evt.getItemDrop().getItemStack();
 		evt.setCancelled(UHCSystem.isRestrictedItem(item));
 	}
-	
+
 	/**
 	 * Allow players to join if the profile max players is greater than the server max.
 	 * @param PlayerLoginEvent evt
 	 */
-	
+
 	@EventHandler
 	public void onPlayerLogin(PlayerLoginEvent evt) {
 		Profile profile = main.getProfile();
@@ -62,37 +62,35 @@ public class TrafficEventsListener implements Listener {
 			evt.allow();
 		}
 	}
-	
+
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent evt) {
 		final Player p = evt.getPlayer();
-		
+
 		new BukkitRunnable() {
-			
+
 			public void run() {
-			    DatabaseQuery query = database.query(String.format("SELECT * FROM %s WHERE UUID='%s';", Globals.TABLE_NAME, p.getUniqueId())); 
+				DatabaseQuery query = database.query(String.format("SELECT * FROM %s WHERE UUID='%s';", Globals.TABLE_NAME, p.getUniqueId())); 
 				ResultSet rs = query.getResultSet();
 				UHCPlayer player;
-				
-                // Let's close the connection that query used.
-                database.closeConnection(query.getConnection());
-				
+
+				// Let's close the connection that query used.
+				database.closeConnection(query.getConnection());
+
 				// We need to handle creating new profiles and obtaining them.
 				if(rs == null) {
 					try {
-						String update = String.format("INSERT INTO %s (UUID, GAMES_PLAYED, GAMES_WON, KILLS, DEATHS) VALUES (?, 0, 0, 0, 0)",
-								Globals.TABLE_NAME);
-						
+						String update = String.format(Globals.NEW_TABLE_ENTRY, Globals.TABLE_NAME);
 						Connection conn = database.obtainConnection();
-						
+
 						if(conn != null) {
-    						PreparedStatement statement = conn.prepareStatement(update);
-    						statement.setString(1, p.getUniqueId().toString());
-    						statement.executeUpdate();
-    						
-    						player = new UHCPlayer(p.getUniqueId(), 0, 0, 0, 0);
-                            main.getOnlinePlayers().put(p.getUniqueId(), player);
-    						database.closeConnection(conn);
+							PreparedStatement statement = conn.prepareStatement(update);
+							statement.setString(1, p.getUniqueId().toString());
+							statement.executeUpdate();
+
+							player = new UHCPlayer(p.getUniqueId(), 0, 0, 0, 0);
+							main.getOnlinePlayers().put(p.getUniqueId(), player);
+							database.closeConnection(conn);
 						}
 					} catch (SQLException e) {
 						main.sendConsoleMessage(ChatColor.DARK_RED + "Encountered an error while creating row for new player.");
@@ -101,7 +99,7 @@ public class TrafficEventsListener implements Listener {
 				}else {
 					try {
 						player = new UHCPlayer(p.getUniqueId(), rs.getInt("GAMES_PLAYED"), rs.getInt("GAMES_WON"), rs.getInt("KILLS"),
-							rs.getInt("DEATHS"));
+								rs.getInt("DEATHS"));
 						main.getOnlinePlayers().put(p.getUniqueId(), player);
 					} catch (SQLException e) {
 						main.sendConsoleMessage(ChatColor.DARK_RED + "Encountered an error while obtaining row for player.");
@@ -109,59 +107,59 @@ public class TrafficEventsListener implements Listener {
 					}
 				}
 			}
-			
+
 		}.runTaskAsynchronously(main);
-		
+
 		new BukkitRunnable() {
-			
+
 			public void run() {
 				UHCPlayer player = main.getOnlinePlayers().get(p.getUniqueId());
-				
+
 				// Let's assign them a team if the game hasn't started yet.
 				GameState state = main.getGame().getState();
 				if(state == GameState.WAITING || state == GameState.STARTING) {
-					if(main.getGame().isTeamMatch()) {
+					if(main.getProfile().isTeamMatch()) {
 						ArrayList<Team> availableTeams = new ArrayList<Team>();
 						for(Team t : UHCSystem.getTeams()) {
-							if(t.getMembers().size() < Globals.MAX_MEMBERS_PER_TEAM) {
+							if(t.getMembers().size() < main.getProfile().getTeamSize()) {
 								availableTeams.add(t);
 							}
 						}
-						
+
 						Team t = availableTeams.get(ThreadLocalRandom.current().nextInt(0, availableTeams.size()));
 						t.addMember(player);
-						
+
 						//PacketPlayOutScoreboardTeam teamPacket = new PacketPlayOutScoreboardTeam(UHCSystem.GHOST_TEAM, 0);
 						//((CraftPlayer) player.getBukkitPlayer()).getHandle().playerConnection.sendPacket(teamPacket);
 					}
-					
+
 					if(state == GameState.WAITING && UHCSystem.canStartGame()) {
 						main.getGame().setState(GameState.STARTING);
 					}
 				}
-				
+
 				player.prepareForGame();
 				UHCSystem.handleLobbyArrival(main, player);
 			}
-			
+
 		}.runTaskLater(main, 30L);
 	}
-	
+
 	@EventHandler
 	public void onPlayerQuit(final PlayerQuitEvent evt) {
 		UHCPlayer player = main.getOnlinePlayers().get(evt.getPlayer().getUniqueId());
 		if(player != null) {
 			main.getOnlinePlayers().remove(player);
-			
+
 			UHCGame game = main.getGame();
 			if(!UHCSystem.canStartGame() && game.getState() == GameState.STARTING) {
 				game.cancelStart();
 			}else if(player.isInGame()) {
 				game.handlePlayerExit(player);
 			}
-			
+
 			player.getBukkitPlayer().getActivePotionEffects().clear();
-			
+
 			for(UHCPlayer uhcPlayer : main.getOnlinePlayers().values()) {
 				UHCScoreboard board = uhcPlayer.getScoreboard();
 				if(board != null) {
@@ -169,17 +167,17 @@ public class TrafficEventsListener implements Listener {
 					uhcPlayer.setScoreboard(board);
 				}
 			}
-			
+
 			World world = Bukkit.getWorld(Globals.LOBBY_WORLD_NAME);
 			player.getBukkitPlayer().teleport(world.getSpawnLocation());
 			main.getSettings().getJedis().announceServerDetails();
-	
+
 			new BukkitRunnable() {
-				
+
 				public void run() {
 					database.handlePlayerExit(evt.getPlayer().getUniqueId());
 				}
-				
+
 			}.runTaskAsynchronously(main);
 		}
 	}

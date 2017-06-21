@@ -11,15 +11,14 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Users/Maverick/Documents/Minecraft/libs/bukkit-1.7.10-R0.1-20140808.005150-4.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Maverick/Documents/Minecraft/libs/spigot-1.7.10-SNAPSHOT-b1657.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Maverick/Documents/Minecraft/libs/Clearlag.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Maverick/Documents/Minecraft/libs/MultiverseCore.disabled.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Maverick/Documents/Minecraft/libs/WorldBorder (3).jar"/>
 	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
 		<attributes>
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/Maverick/Downloads/Multiverse-Core-2.4.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Maverick/Downloads/Vault.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Maverick/Downloads/WorldBorder (3).jar"/>
+	<classpathentry kind="lib" path="C:/Users/Maverick/Downloads/spigot-1.8.8-R0.1-SNAPSHOT (1).jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

@@ -15,31 +15,31 @@ public enum Scenario {
 	FIRELESS("fireless"),
 	STACKABLE_SPEED("stackable-speed"),
 	RANDOM_SWITCH("random-switch");
-	
+
 	private final String configKey;
 	private String name;
 	private ItemStack icon;
-	
+
 	private Scenario(String configKey) {
 		this.configKey = configKey;
 	}
-	
+
 	public void setName(String name) {
 		this.name = name;
 	}
-	
+
 	public String getName() {
 		return this.name;
 	}
-	
+
 	public void setIcon(ItemStack icon) {
 		this.icon = icon;
 	}
-	
+
 	public ItemStack getIcon() {
 		return this.icon.clone();
 	}
-	
+
 	public String getConfigKey() {
 		return this.configKey;
 	}

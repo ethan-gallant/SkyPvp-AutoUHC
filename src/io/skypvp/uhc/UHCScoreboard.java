@@ -1,16 +1,8 @@
 package io.skypvp.uhc;
 
-import io.skypvp.uhc.arena.Team;
-import io.skypvp.uhc.arena.UHCGame.GameState;
-import io.skypvp.uhc.database.HikariDatabase;
-import io.skypvp.uhc.player.UHCPlayer;
-import io.skypvp.uhc.timer.MatchTimer;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import net.md_5.bungee.api.ChatColor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -19,8 +11,14 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 
+import io.skypvp.uhc.arena.Team;
+import io.skypvp.uhc.database.HikariDatabase;
+import io.skypvp.uhc.player.UHCPlayer;
+import io.skypvp.uhc.timer.MatchTimer;
+import net.md_5.bungee.api.ChatColor;
+
 public class UHCScoreboard {
-	
+
 	final SkyPVPUHC main;
 	final HikariDatabase database;
 	final HashMap<Integer, String> lines;
@@ -28,7 +26,7 @@ public class UHCScoreboard {
 	private DisplaySlot slot;
 	private Scoreboard scoreboard;
 	private Objective obj;
-	
+
 	public UHCScoreboard(final SkyPVPUHC instance, final String scoreboard, final DisplaySlot slot) {
 		this.main = instance;
 		this.title = main.getSettings().getScoreboardHeader();
@@ -37,29 +35,29 @@ public class UHCScoreboard {
 		this.lines = new HashMap<Integer, String>();
 		this.slot = slot;
 	}
-	
+
 	private String getTimerName() {
-		if(main.getGame().getState() != GameState.STARTING) {
-			return main.getGame().getTimer().getName();
+		if(main.getGameStateManager().getActiveState().toIndex() != 2) {
+			return main.getGameStateManager().getTimer().getName();
 		}
 		return "";
 	}
-	
+
 	private String handleTimerString(MatchTimer timer) {
 		String clockTime = timer.toString();
 		if(timer.getName().equals("Starting")) {
-			if(main.getGame().getState() != GameState.STARTING) {
+			if(main.getGameStateManager().getActiveState().toIndex() != 2) {
 				clockTime = "Waiting...";
 				return clockTime;
 			}
 		}
-		
+
 		if(timer.getMinutes() == 0 && timer.getSeconds() <= 5) {
 			clockTime = ChatColor.RED + clockTime;
 		}else {
 			clockTime = ChatColor.GREEN + clockTime;
 		}
-		
+
 		if(timer.getName().equals("Starting")) {
 			return timer.getName().concat(": ").concat(clockTime);
 		}else {
@@ -70,7 +68,7 @@ public class UHCScoreboard {
 	public void generate(UHCPlayer player) {
 		lines.clear();
 		List<String> typeLines = main.getSettings().getScoreboardSection().getStringList(scoreboardType);
-		
+
 		for(String line : typeLines) {
 			if(line.isEmpty()) {
 				blankLine();
@@ -85,52 +83,52 @@ public class UHCScoreboard {
 				line = line.replaceAll("\\{gameKills\\}", String.valueOf(player.getGameKills()));
 				line = line.replaceAll("\\{tGameKills\\}", String.valueOf(getGameKills(player)));
 				line = line.replaceAll("\\{timerName\\}", String.valueOf(getTimerName()));
-				if(!main.getGame().getTimer().getName().equalsIgnoreCase("Game Over")) {
-					line = line.replaceAll("\\{timer\\}", handleTimerString(main.getGame().getTimer()));
+				if(!main.getGameStateManager().getTimer().getName().equalsIgnoreCase("Game Over")) {
+					line = line.replaceAll("\\{timer\\}", handleTimerString(main.getGameStateManager().getTimer()));
 				}
 				line = line.replaceAll("\\{lobbyTimer\\}", handleTimerString(main.getGameStateManager().getTimer()));
-				line = line.replaceAll("\\{mode\\}", (main.getGame().isTeamMatch()) ? main.getMessages().getRawMessage("team") : main.getMessages().getRawMessage("solo"));
+				line = line.replaceAll("\\{mode\\}", (main.getProfile().isTeamMatch()) ? main.getMessages().getRawMessage("team") : main.getMessages().getRawMessage("solo"));
 				addLine(ChatColor.translateAlternateColorCodes('&', line));
-				
-				if(isModeLine && main.getGame().isTeamMatch()) {
+
+				if(isModeLine && main.getProfile().isTeamMatch()) {
 					Team team = player.getTeam();
 					if(team != null) {
 						addLine(ChatColor.translateAlternateColorCodes('&', team.getName()));
 					}else {
 						addLine(ChatColor.translateAlternateColorCodes('&', main.getMessages().getRawMessage("not-selected")));
 					}
-					
+
 					blankLine();
 				}
 			}
 		}
 	}
-	
+
 	public int getGameKills(UHCPlayer player) {
 		if(!player.isInGame()) return 0;
 		int kills = 0;
-		
+
 		for(UHCPlayer uhcPlayer : main.getOnlinePlayers().values()) {
 			kills += uhcPlayer.getGameKills();
 		}
-		
+
 		return kills;
 	}
-	
+
 	public void addLine(final String line) {
 		lines.put(lines.size(), line);
 	}
-	
+
 	public void setLine(final int line, String text) {
 		lines.put(line, text);
 	}
-	
+
 	public void removeLine(final int line) {
 		if(lines.containsKey(line)) {
 			lines.remove(line);
 		}
 	}
-	
+
 	public void blankLine() {
 		String str = " ";
 		int blanks = 0;
@@ -145,10 +143,10 @@ public class UHCScoreboard {
 		}
 		addLine(str);
 	}
-	
+
 	private void organizeLines() {
 		int lineNum = lines.size();
-		
+
 		for(final Map.Entry<Integer, String> entry : lines.entrySet()) {
 			final String text = entry.getValue();
 			final Score score = obj.getScore(text);
@@ -156,30 +154,30 @@ public class UHCScoreboard {
 			lineNum -= 1;
 		}
 	}
-	
+
 	public void build(final Player player) {
 		// Updating this to handle the uncolored lines.
-	    scoreboard = (scoreboard == null) ? Bukkit.getScoreboardManager().getNewScoreboard() : scoreboard;
-        if(obj != null) obj.unregister();
-        obj = scoreboard.registerNewObjective("board", "dummy");
-        obj.setDisplayName(ChatColor.translateAlternateColorCodes('&', title));
-        obj.setDisplaySlot(slot);
+		scoreboard = (scoreboard == null) ? Bukkit.getScoreboardManager().getNewScoreboard() : scoreboard;
+		if(obj != null) obj.unregister();
+		obj = scoreboard.registerNewObjective("board", "dummy");
+		obj.setDisplayName(ChatColor.translateAlternateColorCodes('&', title));
+		obj.setDisplaySlot(slot);
 		organizeLines();
 		if(player != null) player.setScoreboard(scoreboard);
 	}
-	
+
 	public String getTitle() {
 		return this.title;
 	}
-	
+
 	public DisplaySlot getDisplaySlot() {
 		return this.slot;
 	}
-	
+
 	public Scoreboard getBoard() {
 		return this.scoreboard;
 	}
-	
+
 	public HashMap<Integer, String> getLines() {
 		return this.lines;
 	}

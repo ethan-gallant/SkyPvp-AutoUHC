@@ -19,10 +19,7 @@
           <target>1.7</target>
         </configuration>
       </plugin>
-    </plugins>
-  </build>
-  
-  <plugins>
+      
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -40,7 +37,25 @@
           </execution>
         </executions>
       </plugin>
-  </plugins>
+    </plugins>
+  </build>
+  
+	<repositories>
+		<repository>
+			<id>bukkit-repo</id>
+			<url>https://hub.spigotmc.org/nexus/content/repositories/public/</url>
+		</repository>
+
+		<repository>
+			<id>sk89q</id>
+			<url>http://maven.sk89q.com/repo</url>
+		</repository>
+		
+        <repository>
+	        <id>vault-repo</id>
+	        <url>http://nexus.hc.to/content/repositories/pub_releases</url>
+        </repository>
+	</repositories>
   
   <dependencies>
   	<dependency>
@@ -58,6 +73,12 @@
         <artifactId>HikariCP-java7</artifactId>
         <version>2.4.11</version>
     </dependency>
+	<dependency>
+		<groupId>net.milkbowl.vault</groupId>
+		<artifactId>VaultAPI</artifactId>
+		<version>1.6</version>
+		<scope>provided</scope>
+	</dependency>
   </dependencies>
   
 </project>

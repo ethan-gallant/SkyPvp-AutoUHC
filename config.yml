@@ -135,6 +135,8 @@ messages:
   not-enough-players: "&eThere are no longer enough players to begin a match. A minimum of &c{numPlayers} &ePlayers is required to start this match."
   lobby-timer-begun: "&eThe game countdown has begun!"
   game-will-start: "&eThe game will begin in &a{seconds}&e."
+  deathmatch-begun: "&cDeathmatch has begun! &4&lFIGHT!"
+  waitingForPlayers: "&eWaiting for more players..."
   kits: "&cKit Selector"
   teams: "&2Team Selector"
   team: "Team"
@@ -146,3 +148,4 @@ messages:
   full: "&4&lFULL"
   not-unlocked: "&cNot unlocked yet!"
   click-to-select: "&eClick to select!"
+  finderCompass: "&b&lTeam Locator"

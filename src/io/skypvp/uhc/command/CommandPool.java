@@ -13,34 +13,50 @@ import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.server.ServerCommandEvent;
 
 public class CommandPool implements Listener {
-	
+
 	final SkyPVPUHC main;
+	private final UHCBaseCommand uhcBaseCmd;
+	private final KickPlayerCommand kickPlayerCmd;
+	private final VoteStartCommand vsCmd;
+	private final TeamChatCommand tcCmd;
 	private final SurfaceCommand surfCmd;
 	private static HashSet<CommandBase> commands;
-	
+
 	public CommandPool(final SkyPVPUHC instance) {
 		this.main = instance;
 		CommandPool.commands = new HashSet<CommandBase>();
+
+		// Let's setup our base command.
+		uhcBaseCmd = new UHCBaseCommand(instance);
+		commands.add(uhcBaseCmd);
+
+		// Let's setup the kick command.
+		kickPlayerCmd = new KickPlayerCommand(instance, uhcBaseCmd);
+		uhcBaseCmd.addSubCommand(kickPlayerCmd);
+
+		// Let's setup the vote start command.
+		vsCmd = new VoteStartCommand();
+		commands.add(vsCmd);
+
+		// Let's setup the surface command.
 		this.surfCmd = new SurfaceCommand(instance);
-		
-		// Let's add the surface command.
 		commands.add(surfCmd);
-		
+
 		// Let's add the team chat command.
-		TeamChatCommand tcCmd = new TeamChatCommand();
+		tcCmd = new TeamChatCommand();
 		commands.add(tcCmd);
 	}
-	
+
 	@EventHandler
 	public void onPlayerExecuteCommand(final PlayerCommandPreprocessEvent evt) {
 		final Player player = evt.getPlayer();
 		handleCommand(player, evt.getMessage());
 	}
-	
+
 	private boolean handleCommand(final CommandSender sender, String msg) {
 		String cmd = msg;
 		String[] args = null;
-		
+
 		if(msg.contains(" ") && !msg.endsWith(" ")) {
 			final String[] elements = msg.split(" ");
 			cmd = elements[0].substring(1, elements[0].length());
@@ -48,39 +64,36 @@ public class CommandPool implements Listener {
 		}else {
 			cmd = cmd.substring(1, cmd.length());
 		}
-		
+
 		for(final CommandBase command : commands) {
 			if(command.getCommand().equalsIgnoreCase(cmd) || command.isAlias(cmd)) {
 				if(command.canExecute(sender, args)) {
 					if(!command.handleSubCommand(sender, args)) {
 						command.run(sender, args);
 					}
-					
+
 					return true;
 				}else {
-				    return false;
+					return false;
 				}
 			}
 		}
-		
+
 		return false;
 	}
-	
+
 	@EventHandler
 	public void onServerExecuteCommand(final ServerCommandEvent evt) {
 		final CommandSender sender = evt.getSender();
 		handleCommand(sender, evt.getCommand());
 	}
-	
+
 	public static void addCommand(final CommandBase cmd) {
 		CommandPool.commands.add(cmd);
 	}
-	
+
 	public HashSet<CommandBase> getCommands() {
 		return CommandPool.commands;
 	}
-	
-	public SurfaceCommand getSurfaceCommand() {
-	    return this.surfCmd;
-	}
+
 }
