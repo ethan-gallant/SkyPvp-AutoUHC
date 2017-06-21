@@ -23,20 +23,20 @@ import org.bukkit.scheduler.BukkitRunnable;
 import com.wimbli.WorldBorder.WorldBorder;
 
 public class WorldManager implements Listener {
-    
+
     final SkyPVPUHC main;
     final WorldBorder worldBorder;
     final List<String> seeds;
-    
+
     private String lastSeed;
     private boolean initialWorldLoadDenied;
-    
+
     public WorldManager(SkyPVPUHC instance) {
         this.main = instance;
         this.worldBorder = instance.getWorldBorder();
         this.seeds = instance.getSettings().getSeeds();
         this.initialWorldLoadDenied = false;
-        
+
         // Let's create the lastSeed.txt file in-case it doesn't exist.
         File lastSeedFile = new File(main.getDataFolder() + "/lastSeed.txt");
         if(!lastSeedFile.exists()) {
@@ -47,30 +47,30 @@ public class WorldManager implements Listener {
                 e.printStackTrace();
             }
         }
-        
+
         this.lastSeed = getStoredSeed();
     }
-    
+
     @EventHandler
     public void onWorldLoad(WorldLoadEvent e) {
         if(!initialWorldLoadDenied) {
             deleteWorld();
             initialWorldLoadDenied = true;
-            
-           // generateWorld();
+
+            // generateWorld();
         }
     }
-    
+
     /**
      * Generates a world suitable for UHC.
      */
-    
+
     public void generateWorld() {
         String seed = getSeed();
-        
+
         main.sendConsoleMessage(ChatColor.YELLOW + "Preparing new UHC game world...");
         main.sendConsoleMessage(String.format(ChatColor.YELLOW + "World will use seed '%s'", seed));
-        
+
         WorldCreator worldCreator = new WorldCreator(Globals.GAME_WORLD_NAME);
         worldCreator.generateStructures(true);
         worldCreator.environment(Environment.NORMAL);
@@ -78,9 +78,9 @@ public class WorldManager implements Listener {
         worldCreator.seed(Long.valueOf(seed));
 
         World world = worldCreator.createWorld();
-        
+
         new BukkitRunnable() {
-            
+
             public void run() {
                 if(Bukkit.getWorld(Globals.GAME_WORLD_NAME) != null) {
                     main.sendConsoleMessage("Is world loaded? Yes!");
@@ -91,20 +91,20 @@ public class WorldManager implements Listener {
             }
         }.runTaskTimer(main, 200L, 0L);
     }
-    
+
     /**
      * Unloads the world with the game world name and deletes
      * its directory.
      * @return boolean - If the world was unloaded or not.
      */
-    
+
     public boolean deleteWorld() {
         World world = Bukkit.getWorld(Globals.GAME_WORLD_NAME);
         if(world != null) {
             boolean unloaded = Bukkit.unloadWorld(world, false);
-            
+
             new BukkitRunnable() {
-                
+
                 public void run() {
                     File sessionLock = new File(Bukkit.getWorldContainer() + String.format("/%s/session.lock", Globals.GAME_WORLD_NAME));
                     if(!sessionLock.exists()) {
@@ -114,15 +114,15 @@ public class WorldManager implements Listener {
                         cancel();
                     }
                 }
-                
+
             }.runTaskAsynchronously(main);
-            
+
             return unloaded;
         }
-        
+
         return false;
     }
-    
+
     private String getStoredSeed() {
         try(BufferedReader br = new BufferedReader(new FileReader(main.getDataFolder() + "/lastSeed.txt"))) {
             String seed = br.readLine();
@@ -135,10 +135,10 @@ public class WorldManager implements Listener {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        
+
         return "";
     }
-    
+
     public void storeLastSeed() {
         try {
             PrintWriter writer = new PrintWriter(main.getDataFolder() + "/lastSeed.txt", "UTF-8");
@@ -149,7 +149,7 @@ public class WorldManager implements Listener {
             e.printStackTrace();
         }
     }
-    
+
     public String getSeed() {
         if(main.getSettings().wantRandomSeeds()) {
             return seeds.get(ThreadLocalRandom.current().nextInt(0, seeds.size()));
@@ -158,7 +158,7 @@ public class WorldManager implements Listener {
             return ((lastIndex + 1) < seeds.size()) ? seeds.get(lastIndex + 1) : seeds.get(0);
         }
     }
-    
+
     public String getLastSeed() {
         return this.lastSeed;
     }
