@@ -7,6 +7,7 @@ comments in *almost* every single class.
 
 ## How to Build
 *THIS PROJECT WAS ORIGINALLY BUILT WITH JAVA 1.8.0_131*
+
 **NOTE: Make sure you have [Apache Maven](https://maven.apache.org/) downloaded and installed correctly.**
 
 1. Verify that you have *all* unmanaged dependencies deployed to your local Maven repository.
