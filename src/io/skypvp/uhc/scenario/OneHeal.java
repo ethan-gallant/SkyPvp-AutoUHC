@@ -62,7 +62,7 @@ public class OneHeal extends Scenario {
 		UHCPlayer player = instance.getOnlinePlayers().get(p.getUniqueId());
 		
 		if(isActive() && player != null && Arrays.asList(Action.RIGHT_CLICK_AIR, Action.RIGHT_CLICK_BLOCK).contains(action)) {
-			ItemStack item = p.getInventory().getItemInMainHand();
+			ItemStack item = p.getItemInHand();
 			if(item.isSimilar(healItem) && p.getHealth() < p.getMaxHealth()) {
 				p.setHealth(p.getMaxHealth());
 				p.getInventory().remove(item);

@@ -123,16 +123,6 @@ public class UHCGame {
     }
 
     /**
-     * This method handles after a player respawns
-     * or if they've won the match.
-     * @param player
-     */
-
-    public void handlePostRespawn(UHCPlayer player) {
-        UHCSystem.handleLobbyArrival(main, player);
-    }
-
-    /**
      * Resets the data members associated with this class.
      */
 

@@ -55,7 +55,7 @@ public class SurfaceCommand extends CommandBase {
 		// This is a safe casting because this method isn't called unless a player is executing this command.
 		// Refer to: InGameRequirement.java
 		Player p = (Player) sender;
-		UHCPlayer uhcPlayer = SkyPVPUHC.onlinePlayers.get(p.getUniqueId());
+		UHCPlayer uhcPlayer = SkyPVPUHC.get().getOnlinePlayers().get(p.getUniqueId());
 
 		if(uhcPlayer != null) {
 			final Messages msgs = main.getMessages();

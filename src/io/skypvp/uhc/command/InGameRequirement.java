@@ -13,7 +13,7 @@ public class InGameRequirement extends PlayerRequirement {
 	public boolean isReached(CommandSender sender) {
 		if(super.isReached(sender)) {
 			Player p = (Player) sender;
-			UHCPlayer uhcPlayer = SkyPVPUHC.onlinePlayers.get(p.getUniqueId());
+			UHCPlayer uhcPlayer = SkyPVPUHC.get().getOnlinePlayers().get(p.getUniqueId());
 
 			return (uhcPlayer != null && uhcPlayer.isInGame());
 		}

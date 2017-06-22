@@ -62,7 +62,7 @@ public class GameStateManager {
             if(pTeam.getMembers().size() == 0) {
                 String teamEliminated = UHCSystem.getTeamNameWithPrefix(pTeam).concat(" has been eliminated!");
                 UHCSystem.broadcastMessageAndSound(main.getMessages().color(teamEliminated), 
-                        Sound.ENTITY_ENDERDRAGON_HURT, 2F);
+                        Sound.ENDERDRAGON_HIT, 2F);
             }
 
             final ArrayList<Team> teamsAlive = new ArrayList<Team>();

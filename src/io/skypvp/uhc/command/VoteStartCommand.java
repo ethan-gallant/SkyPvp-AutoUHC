@@ -7,7 +7,6 @@ import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.arena.state.GameStateManager;
 import io.skypvp.uhc.arena.state.LobbyWaitState;
 import io.skypvp.uhc.player.UHCPlayer;
-import io.skypvp.uhc.util.ConfigUtils;
 import net.md_5.bungee.api.ChatColor;
 
 public class VoteStartCommand extends CommandBase {
@@ -26,10 +25,10 @@ public class VoteStartCommand extends CommandBase {
 		// This is a safe casting because this method isn't called unless a player is executing this command.
 		// Refer to: PlayerRequirement.java.
 		Player p = (Player) sender;
-		UHCPlayer uhcPlayer = SkyPVPUHC.onlinePlayers.get(p.getUniqueId());
+		UHCPlayer uhcPlayer = SkyPVPUHC.get().getOnlinePlayers().get(p.getUniqueId());
 
 		if(uhcPlayer != null) {
-			GameStateManager gsm = ConfigUtils.main.getGameStateManager();
+			GameStateManager gsm = SkyPVPUHC.get().getGameStateManager();
 			if(gsm.getActiveState() instanceof LobbyWaitState) {
 				((LobbyWaitState) gsm.getActiveState()).voteForForceStart(p.getUniqueId());
 			}else {

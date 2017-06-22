@@ -32,7 +32,6 @@ import net.minecraft.server.v1_8_R3.ScoreboardTeam;
 
 public class UHCSystem {
 
-    private static SkyPVPUHC main;
     private static HashSet<Team> teams = new HashSet<Team>();
     private static HashSet<ItemStack> restrictedItems = new HashSet<ItemStack>();
     private static HashMap<Block, ScenarioDrops> scenarioDrops = new HashMap<Block, ScenarioDrops>();
@@ -88,7 +87,7 @@ public class UHCSystem {
      */
 
     public static Location getRandomSpawnPoint(double minX, double maxX, double minZ, double maxZ) {
-        World world = main.getWorldHandler().getGameWorld().getCBWorld();
+        World world = SkyPVPUHC.get().getWorldHandler().getGameWorld().getCBWorld();
         double x, z;
         Block highestBlock;
 
@@ -146,7 +145,7 @@ public class UHCSystem {
     public static void assignPlayerToRandomTeam(UHCPlayer uhcPlayer) {
         ArrayList<Team> availableTeams = new ArrayList<Team>();
         for(Team t : teams) {
-            if(t.getMembers().size() < main.getProfile().getTeamSize()) {
+            if(t.getMembers().size() < SkyPVPUHC.get().getProfile().getTeamSize()) {
                 availableTeams.add(t);
             }
         }
@@ -321,7 +320,7 @@ public class UHCSystem {
      */
 
     public static void broadcastSound(Sound sound) {
-        Iterator<UHCPlayer> iterator = main.getOnlinePlayers().values().iterator();
+        Iterator<UHCPlayer> iterator = SkyPVPUHC.get().getOnlinePlayers().values().iterator();
         while(iterator.hasNext()) {
             UHCPlayer p = iterator.next();
             Player bP = Bukkit.getPlayer(p.getUUID());
@@ -337,7 +336,7 @@ public class UHCSystem {
      */
 
     public static void broadcastMessage(String msg) {
-        Iterator<UHCPlayer> iterator = main.getOnlinePlayers().values().iterator();
+        Iterator<UHCPlayer> iterator = SkyPVPUHC.get().getOnlinePlayers().values().iterator();
         while(iterator.hasNext()) {
             UHCPlayer p = iterator.next();
             Player bP = Bukkit.getPlayer(p.getUUID());
@@ -366,7 +365,7 @@ public class UHCSystem {
      */
 
     public static void broadcastMessageAndSound(String msg, Sound sound, float volume) {
-        Iterator<UHCPlayer> iterator = main.getOnlinePlayers().values().iterator();
+        Iterator<UHCPlayer> iterator = SkyPVPUHC.get().getOnlinePlayers().values().iterator();
         while(iterator.hasNext()) {
             UHCPlayer p = iterator.next();
             Player bP = Bukkit.getPlayer(p.getUUID());

@@ -13,11 +13,30 @@
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.1</version>
+        <version>3.3</version>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <compilerVersion>1.8</compilerVersion>
+          <compilerArguments>
+          	<source>1.8</source>
+          	<target>1.8</target>
+          </compilerArguments>
+          <fork>true</fork>
+          <executable>C:\Program Files\Java\jdk1.8.0_131\bin\javac.exe</executable>
         </configuration>
+      </plugin>
+      
+      <plugin>
+          <!-- Build an executable JAR -->
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.0.2</version>
+          <configuration>
+              <archive>
+                  <manifest>
+                      <mainClass>io.skypvp.uhc.SkyPVPUHC</mainClass>
+                  </manifest>
+              </archive>
+          </configuration>
       </plugin>
       
       <plugin>
@@ -31,20 +50,26 @@
               <goal>shade</goal>
             </goals>
 			<configuration>
-				<shadedArtifactAttached>false</shadedArtifactAttached> <!-- Make the shaded artifact not the main one -->
-				<shadedClassifierName></shadedClassifierName> <!-- set the suffix to the shaded jar -->
+			  <shadedArtifactAttached>false</shadedArtifactAttached> <!-- Make the shaded artifact not the main one -->
+			  <shadedClassifierName></shadedClassifierName> <!-- set the suffix to the shaded jar -->
 			</configuration>
           </execution>
         </executions>
       </plugin>
     </plugins>
+    
+    <resources>
+    	<resource>
+    		<directory>resources</directory>
+    	</resource>
+    </resources>
   </build>
   
 	<repositories>
-		<repository>
-			<id>bukkit-repo</id>
-			<url>https://hub.spigotmc.org/nexus/content/repositories/public/</url>
-		</repository>
+	    <repository>
+	        <id>spigot-repo</id>
+	        <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+	    </repository>
 
 		<repository>
 			<id>sk89q</id>
@@ -55,6 +80,12 @@
 	        <id>vault-repo</id>
 	        <url>http://nexus.hc.to/content/repositories/pub_releases</url>
         </repository>
+        
+        <repository>
+	        <id>io.skypvp</id>
+	        <url>file:${project.basedir}/repo</url>
+        </repository>
+        
 	</repositories>
   
   <dependencies>
@@ -84,6 +115,59 @@
 	  <artifactId>commons-lang3</artifactId>
 	  <version>3.6</version>
 	</dependency>
+    <!--Spigot API-->
+    <dependency>
+      <groupId>org.spigotmc</groupId>
+      <artifactId>spigot-api</artifactId>
+      <version>1.8.8-R0.1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <!--Bukkit API-->
+    <dependency>
+      <groupId>org.bukkit</groupId>
+      <artifactId>bukkit</artifactId>
+      <version>1.8.8-R0.1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+   <dependency>
+      <groupId>org.bukkit</groupId>
+      <artifactId>craftbukkit</artifactId>
+      <version>1.8.8-R0.1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <!--Local Repository Artifacts
+    	How the WorldBorder-1.8.5.jar was added to local repo
+    	mvn deploy:deploy-file -Durl=file:///repo/ -Dfile=WorldBorder.jar 
+    	-DgroupId=io.skypvp -DartifactId=WorldBorder -Dpackaging=jar -Dversion=1.8.5
+    	
+    	How the Multiverse-Core-2.4.jar was added to local repo
+    	mvn deploy:deploy-file -Durl=file:///repo/ -Dfile=Multiverse-Core-2.4.jar 
+    	-DgroupId=io.skypvp -DartifactId=Multiverse-Core -Dpackaging=jar -Dversion=2.4
+    	
+    	To deploy these dependencies to local repo do the following:
+    	NOTE: If you haven't installed or downloaded Apache Maven yet, do the following:
+    		This project was built with Java JDK 1.8.0_131 and Apache Maven 3.5.0
+    		- 1) Download from: http://maven.apache.org/download.html
+    		- 2) Follow installation instructions from: http://maven.apache.org/install.html#
+    		- 3) Open up system terminal and test via: "mvn -v"
+    	1) Create a directory called "repo" at the base project directory.
+    	2) Place WorldBorder 1.8.5's jar inside of the base project directory as "WorldBorder.jar"
+    	3) Place Multiverse-Core's 2.4 jar inside of the base project directory as "Multiverse-Core-2.4.jar"
+    	4) Change the working directory to the project's base directory.
+    	5) Call the "deploy" commands.
+    	NOTE: Simply copy and paste entire command inside of quotation marks ("").
+    	DO NOT COPY OR PLACE QUOTATION MARKS IN TERMINAL
+    -->
+    <dependency>
+    	<groupId>io.skypvp</groupId>
+    	<artifactId>WorldBorder</artifactId>
+    	<version>1.8.5</version>
+    </dependency>
+    <dependency>
+    	<groupId>io.skypvp</groupId>
+    	<artifactId>Multiverse-Core</artifactId>
+    	<version>2.4</version>
+    </dependency>
   </dependencies>
   
 </project>

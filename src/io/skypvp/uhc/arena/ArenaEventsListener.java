@@ -136,7 +136,7 @@ public class ArenaEventsListener implements Listener {
         Player cbPlayer = player.getBukkitPlayer();
 
         // The player isn't in the match anymore.
-        game.handlePlayerExit(player);
+        //game.handlePlayerExit(player);
 
         // Let's do the lightning effect if it's enabled.
         if(settings.wantLightningDeaths()) main.getWorldHandler().getGameWorld().getCBWorld().strikeLightningEffect(cbPlayer.getLocation());
@@ -155,7 +155,7 @@ public class ArenaEventsListener implements Listener {
         }
 
         player.prepareForGame();
-        UHCSystem.broadcastMessageAndSound(msgs.color(message), Sound.ENTITY_ENDERDRAGON_GROWL, 4F);
+        UHCSystem.broadcastMessageAndSound(msgs.color(message), Sound.ENDERDRAGON_GROWL, 4F);
     }
 
     @EventHandler

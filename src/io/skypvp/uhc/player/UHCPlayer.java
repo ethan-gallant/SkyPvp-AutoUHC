@@ -1,5 +1,6 @@
 package io.skypvp.uhc.player;
 
+import java.sql.PreparedStatement;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -10,10 +11,10 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import io.skypvp.uhc.Globals;
+import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCScoreboard;
 import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.menu.Menu;
-import io.skypvp.uhc.util.ConfigUtils;
 
 public class UHCPlayer {
 
@@ -93,7 +94,7 @@ public class UHCPlayer {
         p.setAllowFlight(true);
 
         // We need to show ourselves to other spectators and hide from active players.
-        for(UHCPlayer player : ConfigUtils.main.getOnlinePlayers().values()) {
+        for(UHCPlayer player : SkyPVPUHC.get().getOnlinePlayers().values()) {
             if(player.getState() != PlayerState.SPECTATING) {
                 player.getBukkitPlayer().hidePlayer(p);
                 p.showPlayer(player.getBukkitPlayer());
@@ -112,7 +113,7 @@ public class UHCPlayer {
                     p.setGameMode(GameMode.ADVENTURE);
                 }
             }
-        }.runTaskLater(ConfigUtils.main, 10L);
+        }.runTaskLater(SkyPVPUHC.get(), 10L);
     }
 
     /**

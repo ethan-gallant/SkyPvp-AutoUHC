@@ -9,15 +9,23 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 
+import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.player.UHCPlayer;
-import io.skypvp.uhc.util.ConfigUtils;
 
 public class Team {
 
 	private final String name;
 	private final ItemStack icon;
 	private final HashSet<UHCPlayer> members;
+	
+	/**
+	 * Creates a new container to represent a UHC team.
+	 * Should only be created once at server startup.
+	 * @param String name - The name of the team.
+	 * @param {@link ItemStack} - The icon representing the team.
+	 * Usually the icon that represents the team is a dye item.
+	 */
 
 	public Team(String name, ItemStack icon) {
 		this.name = name;
@@ -44,10 +52,19 @@ public class Team {
 		p.getInventory().setBoots(boots);
 
 		// Let's give this player the team locator compass.
-		String compassName = ConfigUtils.main.getMessages().getColoredString("finderCompass");
+		String compassName = SkyPVPUHC.get().getMessages().getColoredString("finderCompass");
 		ItemStack compass = UHCSystem.nameItem(new ItemStack(Material.COMPASS), compassName);
 		p.getInventory().addItem(compass);
 	}
+	
+	/**
+	 * Creates a dyed armor piece of specified {@link Material}
+	 * of the team color and name.
+	 * Name is in this format: "{TEAM_COLOR} {ARMOR_PIECE}"
+	 * Example: "Orange Chestplate"
+	 * @param {@link Material}
+	 * @return {@link ItemStack}
+	 */
 
 	private ItemStack createArmorPiece(Material type) {
 		@SuppressWarnings("deprecation")
@@ -73,6 +90,11 @@ public class Team {
 	public String getName() {
 		return this.name;
 	}
+	
+	/**
+	 * Fetches a clone of team icon.
+	 * @return {@link ItemStack}
+	 */
 
 	public ItemStack getIcon() {
 		return this.icon.clone();
@@ -101,6 +123,11 @@ public class Team {
 		if(removed) player.setTeam(null);
 		return removed;
 	}
+	
+	/**
+	 * Fetches all members of this team.
+	 * @return {@link HashSet} of {@link UHCPlayer}s.
+	 */
 
 	public HashSet<UHCPlayer> getMembers() {
 		return this.members;

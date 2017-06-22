@@ -16,8 +16,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 
 public class ConfigUtils {
-    
-    public static SkyPVPUHC main;
 	
 	public static void copy(InputStream in, File file) {
 		try {
@@ -69,8 +67,8 @@ public class ConfigUtils {
 
             return new ItemStack(mat, amount, data);
         } catch (IllegalArgumentException | NullPointerException e) {
-            main.sendConsoleMessage(ChatColor.DARK_RED + String.format("Material %s does not exist. Please check your config.", split[0]));
-            main.disable();
+            SkyPVPUHC.get().sendConsoleMessage(ChatColor.DARK_RED + String.format("Material %s does not exist. Please check your config.", split[0]));
+            SkyPVPUHC.get().disable();
         }
         
         return null;
@@ -81,8 +79,8 @@ public class ConfigUtils {
             Sound snd = Sound.valueOf(soundStr);
             return snd;
         } catch (IllegalArgumentException | NullPointerException e) {
-            main.sendConsoleMessage(ChatColor.DARK_RED + String.format("Sound %s does not exist. Please check your config.", soundStr));
-            main.disable();
+            SkyPVPUHC.get().sendConsoleMessage(ChatColor.DARK_RED + String.format("Sound %s does not exist. Please check your config.", soundStr));
+            SkyPVPUHC.get().disable();
         }
         
         return null;
