@@ -1,7 +1,8 @@
 package io.skypvp.uhc.command;
 
 import org.bukkit.command.CommandSender;
-import net.md_5.bungee.api.ChatColor;
+
+import io.skypvp.uhc.SkyPVPUHC;
 
 public class PermissionRequirement extends Requirement {
 
@@ -18,7 +19,7 @@ public class PermissionRequirement extends Requirement {
 
 	@Override
 	public void onFailed(CommandSender sender) {
-		sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&cError: &4You don't have permission to execute that command."));
+		sender.sendMessage(SkyPVPUHC.get().getMessages().getMessage("no-permission"));
 	}
 
 	public String getPermission() {

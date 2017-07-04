@@ -51,10 +51,12 @@ public class Team {
 		p.getInventory().setLeggings(leggings);
 		p.getInventory().setBoots(boots);
 
-		// Let's give this player the team locator compass.
-		String compassName = SkyPVPUHC.get().getMessages().getColoredString("finderCompass");
-		ItemStack compass = UHCSystem.nameItem(new ItemStack(Material.COMPASS), compassName);
-		p.getInventory().addItem(compass);
+		// Let's give this player the team locator compass, if it's needed.
+		if(members.size() > 1) {
+    		String compassName = SkyPVPUHC.get().getMessages().getColoredString("finder-compass");
+    		ItemStack compass = UHCSystem.nameItem(new ItemStack(Material.COMPASS), compassName);
+    		p.getInventory().addItem(compass);
+		}
 	}
 	
 	/**

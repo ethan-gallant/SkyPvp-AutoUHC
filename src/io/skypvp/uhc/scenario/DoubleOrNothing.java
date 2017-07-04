@@ -22,7 +22,7 @@ public class DoubleOrNothing extends DropUpdaterScenario {
 
 	@Override
 	public ArrayList<ItemStack> handleDrops(ArrayList<ItemStack> drops) {
-		int rndmNum = ThreadLocalRandom.current().nextInt(0, 101);
+		int rndmNum = ThreadLocalRandom.current().nextInt(0, 100);
 		Iterator<ItemStack> iterator = drops.iterator();
 		while(iterator.hasNext()) {
 			ItemStack item = iterator.next();

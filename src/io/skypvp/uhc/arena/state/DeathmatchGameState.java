@@ -11,7 +11,9 @@ public class DeathmatchGameState extends TimedGameState {
 	}
 
 	public void onEnter() {
-		timer = TimerUtils.createTimer(main, "Deathmatch", main.getProfile().getGracePeriodLength());
+		stateMgr.setTimer(TimerUtils.createTimer(main, "Deathmatch", 
+		        main.getProfile().getGracePeriodLength()));
+		timer = stateMgr.getTimer();
 		UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("deathmatch-begun"), 
 				main.getSettings().getStateUpdateSound());
 		super.onEnter();

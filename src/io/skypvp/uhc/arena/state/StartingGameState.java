@@ -8,6 +8,7 @@ import io.skypvp.uhc.UHCScoreboard;
 import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.player.UHCPlayer;
 import io.skypvp.uhc.player.UHCPlayer.PlayerState;
+import io.skypvp.uhc.timer.TimerUtils;
 
 public class StartingGameState extends TimedGameState {
 
@@ -26,7 +27,7 @@ public class StartingGameState extends TimedGameState {
             if(lastSecondShown != timer.getSeconds()) {
                 String msg = main.getMessages().getRawMessage("game-will-start");
                 msg = msg.replaceAll("\\{seconds\\}", String.valueOf(timer.getSeconds()));
-                main.getMessages().color(msg);
+                msg = main.getMessages().constructMessage(msg);
                 UHCSystem.broadcastMessageAndSound(msg, main.getSettings().getCountdownSound());
                 lastSecondShown = timer.getSeconds();
             }
@@ -34,6 +35,9 @@ public class StartingGameState extends TimedGameState {
     }
 
     public void onEnter() {
+        stateMgr.setTimer(TimerUtils.createTimer(main, "Starting", 
+                main.getSettings().getStartTime()));
+        this.timer = stateMgr.getTimer();
         super.onEnter();
         String msg = main.getMessages().getMessage("lobby-timer-begun");
         UHCSystem.broadcastMessageAndSound(msg, main.getSettings().getStateUpdateSound());
@@ -52,7 +56,8 @@ public class StartingGameState extends TimedGameState {
 
             // We need to make sure that player is assigned to a team if this is
             // a team match and we're not using random teams.
-            if(main.getProfile().isTeamMatch() && !main.getProfile().usesRandomTeams()) {
+            if(main.getProfile().isTeamMatch() && !main.getProfile().usesRandomTeams()
+                    && player.getTeam() == null) {
                 UHCSystem.assignPlayerToRandomTeam(player);
             }
 
@@ -63,8 +68,11 @@ public class StartingGameState extends TimedGameState {
             if(player.getTeam() != null) {
                 player.getTeam().giveGear(player);
 
-                // Let's default to having team chat on.
-                player.setInTeamChat(true);
+                // Let's default to having team chat on if
+                // this team has more than one member.
+                if(player.getTeam().getMembers().size() > 1) {
+                    player.setInTeamChat(true);
+                }
             }
 
             UHCScoreboard scoreboard = new UHCScoreboard(main, "gameScoreboard", DisplaySlot.SIDEBAR);
@@ -73,10 +81,15 @@ public class StartingGameState extends TimedGameState {
         }
 
         main.getGame().setupScenarios();
+        main.getGame().recalculateAlivePlayers();
+        main.getGame().recalculateAliveTeams();
     }
 
     public void onFailure() {
-        String msg = main.getMessages().getMessage("not-enough-players");
+        int amtNeeded = (int) (main.getProfile().getMaxPlayers() * 0.6);
+        String msg = main.getMessages().getRawMessage("not-enough-players");
+        msg = main.getMessages().constructMessage(msg.replaceAll("\\{numPlayers\\}", 
+                String.valueOf(amtNeeded)));
         UHCSystem.broadcastMessageAndSound(msg, main.getSettings().getErrorSound());
     }
 

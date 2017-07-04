@@ -46,11 +46,24 @@ public class CommandPool implements Listener {
 		tcCmd = new TeamChatCommand();
 		commands.add(tcCmd);
 	}
+	
+	/**
+	 * Processes match resets to prevent memory leaks.
+	 */
+	
+	public void processMatchReset() {
+	    surfCmd.getUsers().clear();
+	}
 
 	@EventHandler
 	public void onPlayerExecuteCommand(final PlayerCommandPreprocessEvent evt) {
 		final Player player = evt.getPlayer();
-		handleCommand(player, evt.getMessage());
+		boolean handled = handleCommand(player, evt.getMessage());
+		
+		// We didn't list our commands in the plugin.yml, so if we handled
+		// the command internally, let's just cancel the event so the server doesn't
+		// send an "unknown command" message.
+		if(handled) evt.setCancelled(true);
 	}
 
 	private boolean handleCommand(final CommandSender sender, String msg) {

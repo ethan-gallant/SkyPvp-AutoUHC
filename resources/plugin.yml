@@ -4,3 +4,17 @@ version: 1.0
 
 main: io.skypvp.uhc.SkyPVPUHC
 load: STARTUP
+
+permission:
+  uhc.forcestart:
+    default: true
+    description: Gives a player access to the /votestart command.
+  uhc.teamchat:
+    default: true
+    description: Gives a player access to the /teamchat command.
+  uhc.surface:
+    default: false
+    description: Gives a player access to the /surface command.
+  uhc.admin:
+    default: false
+    description: Identifies a player as an admin and gives them access to admin commands.

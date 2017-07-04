@@ -170,7 +170,10 @@ public class UHCJedis {
 
 		// The state of the game.
 		GameStateManager gsm = main.getGameStateManager();
-		p.hset(serverName, GAME_STATE_KEY, String.valueOf(gsm.getActiveState().toIndex()));
+		int stateIndex = -1;
+		
+		if(gsm != null) stateIndex = gsm.getActiveState().toIndex();
+		p.hset(serverName, GAME_STATE_KEY, String.valueOf(stateIndex));
 
 		// Let's give a list of our active scenarios.
 		p.hset(serverName, ACTIVE_SCENARIOS_KEY, scenarioListToString());

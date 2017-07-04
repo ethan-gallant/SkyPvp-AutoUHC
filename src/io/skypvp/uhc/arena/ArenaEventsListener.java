@@ -33,6 +33,7 @@ import io.skypvp.uhc.player.event.UHCPlayerChangeTeamEvent;
 import io.skypvp.uhc.player.event.UHCPlayerDeathEvent;
 import io.skypvp.uhc.scenario.ScenarioType;
 import io.skypvp.uhc.timer.event.UHCMatchTimerExpiredEvent;
+import net.md_5.bungee.api.ChatColor;
 
 public class ArenaEventsListener implements Listener {
 
@@ -82,11 +83,16 @@ public class ArenaEventsListener implements Listener {
         Inventory inv = evt.getInventory();
         Player p = ((Player) evt.getPlayer());
         UHCPlayer player = main.getOnlinePlayers().get(p.getUniqueId());
-        Menu activeMenu = player.getActiveMenu();
-
-        if(activeMenu != null && activeMenu.getUI() == inv) {
-            activeMenu.closed();
-            player.setActiveMenu(null);
+        
+        try {
+            Menu activeMenu = player.getActiveMenu();
+    
+            if(activeMenu != null && activeMenu.getUI() == inv) {
+                activeMenu.closed();
+                player.setActiveMenu(null);
+            }
+        } catch (Exception e) {
+            main.sendConsoleMessage(ChatColor.DARK_RED + "An error occurred while processing the closing of a UHCMenu.");
         }
     }
 
@@ -115,6 +121,12 @@ public class ArenaEventsListener implements Listener {
         for(UHCPlayer p : main.getOnlinePlayers().values()) {
             if(p.getActiveMenu() != null && p.getActiveMenu() instanceof TeamSelectorMenu) {
                 p.getActiveMenu().show();
+            }
+            
+            if(p.getTeam() != null && p.getTeam() == evt.getTeam()) {
+                // Let's update the scoreboard of the players on this team.
+                p.getScoreboard().generate(p);
+                p.setScoreboard(p.getScoreboard());
             }
 
             String message = msgs.getRawMessage("player-joined-team");
@@ -155,7 +167,7 @@ public class ArenaEventsListener implements Listener {
         }
 
         player.prepareForGame();
-        UHCSystem.broadcastMessageAndSound(msgs.color(message), Sound.ENDERDRAGON_GROWL, 4F);
+        UHCSystem.broadcastMessageAndSound(msgs.constructMessage(message), Sound.ENDERDRAGON_GROWL, 4F);
     }
 
     @EventHandler
@@ -184,7 +196,7 @@ public class ArenaEventsListener implements Listener {
 
                 if(!(minX < l.getX() && l.getX() < maxX) || (!(minZ < l.getZ() && l.getZ() < maxZ))) {
                     p.teleport(UHCSystem.getRandomSpawnPoint(minX, maxX, minZ, maxZ));
-                    p.sendMessage("You've been teleported so you're within the new border.");
+                    p.sendMessage(msgs.getMessage("teleported-within-border"));
                 }
             }
 

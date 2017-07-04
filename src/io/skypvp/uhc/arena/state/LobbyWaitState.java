@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import io.skypvp.uhc.Settings;
+import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.player.UHCPlayer;
@@ -34,20 +34,24 @@ public class LobbyWaitState extends GameState {
 
     public void run() {
         // Every 3 seconds, let's broadcast that we're waiting for more players.
-        if(System.currentTimeMillis() > lastWaitNoticeMs + 3000) {
-            UHCSystem.broadcastMessage(main.getMessages().getMessage("waitingForPlayers"));
+        if(System.currentTimeMillis() > lastWaitNoticeMs + Globals.WAITING_FOR_PLAYERS_WARNING_TIME) {
+            UHCSystem.broadcastMessage(main.getMessages().getMessage("waiting-for-players"));
+            lastWaitNoticeMs = System.currentTimeMillis();
         }
     }
+
+    /**
+     * We can move onto the {@link StartingGameState} if at least 75%
+     * have voted for a force-start, an admin has force started the match,
+     * or if the server is 60% full.
+     */
 
     @Override
     public boolean canMoveOn() {
         int onlinePlayers = main.getOnlinePlayers().keySet().size();
         double perct = ((double) forcestartVotes.size()) / onlinePlayers;
 
-        Settings settings = main.getSettings();
-        boolean teamMode = main.getProfile().isTeamMatch();
-        return (perct >= 0.75) || ((teamMode && onlinePlayers >= settings.getMinimumTeamGamePlayers()) ||
-                !teamMode && onlinePlayers >= settings.getMinimumSoloGamePlayers());
+        return (perct >= 0.75 || getDefaultContinuationLogic());
     }
 
     /**
@@ -61,7 +65,9 @@ public class LobbyWaitState extends GameState {
 
     public void onEnter() {}
 
-    public void onExit() {}
+    public void onExit() {
+        forcestartVotes.clear();
+    }
 
     ////////////////////////////////////////////////////////////
     // 			CODE RELATING TO FORCE-START VOTING           //
@@ -69,6 +75,7 @@ public class LobbyWaitState extends GameState {
 
     /**
      * Attempts to send a vote for force-start.
+     * If an admin of the match votes, this automatically starts the match.
      * @param {@link UUID} - The uuid of the {@link UHCPlayer} who's voting.
      * @return true/false, if the vote was successful or not.
      */
@@ -76,33 +83,37 @@ public class LobbyWaitState extends GameState {
     public boolean voteForForceStart(UUID uuid) {
         boolean voted = hasVotedForForceStart(uuid);
         Player p = Bukkit.getPlayer(uuid);
+        boolean matchAdmin = UHCSystem.isMatchAdmin(p);
         if(p == null) return false;
 
         if(!voted) {
             int onlinePlayers = main.getOnlinePlayers().keySet().size();
-            if(main.getProfile().isTeamMatch() && onlinePlayers >= main.getSettings().getMinimumTeamGamePlayers() 
-                    || !main.getProfile().isTeamMatch() && onlinePlayers >= main.getSettings().getMinimumSoloGamePlayers()) {
-                // There's enough players online.
+            if(onlinePlayers >= main.getProfile().getMinimumNeededPlayers() || matchAdmin) {
+                // Let's verify that we're still in the LobbyWaitState...
                 if(stateMgr.getActiveState() == this) {
                     forcestartVotes.add(uuid);
-                    p.sendMessage(main.getMessages().color(main.getMessages().getMessage("voteSuccess")));
-
                     double perct = ((double) forcestartVotes.size()) / onlinePlayers;
-                    if(perct >= 0.75) {
-                        // Great, we have enough voters!
-                        String forceStartMsg = main.getMessages().color(main.getMessages().getMessage("forceStartSuccess"));
+                    p.sendMessage(main.getMessages().getMessage("vote-success"));
+                    if(perct >= 0.75 || matchAdmin) {
+                        // Great, we can now start the match.
+                        String msgKey = (matchAdmin) ? "force-start-success-admin" : "force-start-success";
+                        String forceStartMsg = main.getMessages().getMessage(msgKey);
                         Iterator<UUID> iterator = main.getOnlinePlayers().keySet().iterator();
                         while(iterator.hasNext()) {
                             UUID uid = iterator.next();
                             Player bP = Bukkit.getPlayer(uid);
-                            if(bP != null) {
+                            if(bP != null && bP != p) {
                                 bP.sendMessage(forceStartMsg);
                             }
                         }
+
+                        // Let's give the state manager some information.
+                        stateMgr.setAdminForcedStart(matchAdmin);
+                        stateMgr.setForceStartPlayers(main.getServer().getOnlinePlayers().size());
                     }
                 }
             }else {
-                p.sendMessage(main.getMessages().color(main.getMessages().getMessage("notEnoughPlayers")));
+                p.sendMessage(main.getMessages().getMessage("not-enough-players"));
                 return false;
             }
 

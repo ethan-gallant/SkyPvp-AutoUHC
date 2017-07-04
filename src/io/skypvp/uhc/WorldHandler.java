@@ -31,13 +31,14 @@ public class WorldHandler {
 	final MultiverseCore multiverse;
 	final MVWorldManager worldMgr;
 	final List<String> seeds;
+	
 	private MultiverseWorld gameWorld;
-	String lastSeed;
+	private String lastSeed;
 
 	public WorldHandler(SkyPVPUHC instance) { 
 		this.main = instance;
 		this.worldBorder = instance.getWorldBorder();
-		this.multiverse = null; //instance.getMultiverse();
+		this.multiverse = instance.getMultiverse();
 		this.worldMgr = multiverse.getMVWorldManager();
 		this.seeds = instance.getSettings().getSeeds();
 		this.gameWorld = null;
@@ -92,6 +93,13 @@ public class WorldHandler {
 
 		main.sendConsoleMessage(ChatColor.YELLOW + "Preparing new UHC game world...");
 		main.sendConsoleMessage(String.format(ChatColor.YELLOW + "World will use seed '%s'", seed));
+		
+		// Let's check wtf is going on, fam.
+		System.out.println(Globals.GAME_WORLD_NAME);
+		System.out.println(Environment.NORMAL);
+		System.out.println(seed);
+		System.out.println(worldMgr);
+		System.out.println(WorldType.NORMAL);
 		boolean added = worldMgr.addWorld(Globals.GAME_WORLD_NAME, Environment.NORMAL, seed, WorldType.NORMAL, true, "", false);
 
 		if(added) {
@@ -107,10 +115,8 @@ public class WorldHandler {
 
 			// Let's set the respawn world.
 			gameWorld.setRespawnToWorld(Globals.LOBBY_WORLD_NAME);
-
+			
 			main.sendConsoleMessage(ChatColor.DARK_GREEN + "Successfully created new UHC game world!");
-
-			main.getGameStateManager().startRunning();
 		}
 	}
 

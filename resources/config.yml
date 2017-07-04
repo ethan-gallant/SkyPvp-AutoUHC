@@ -7,7 +7,7 @@ server-name: 'UHC-1'
 want-random-seeds: true
 want-lightning-deaths: true
 want-god-apples: false
-want-prefix-messages: false
+want-prefix-messages: true
 
 # These are the materials for variable GUI elements
 kit-selector-item: CHEST
@@ -23,7 +23,12 @@ database:
   database: 'uhc'
   host: 'localhost'
   port: '3306'
-  
+
+jedis:
+  host: '127.0.0.1'
+  port: 6379
+  password: ''
+
 seeds:
   - '-1612847758'
   - '-2276103805517349348'
@@ -52,30 +57,38 @@ scenarios:
   diamondless:
     name: "&cDiamond-less"
     icon: DIAMOND
-  blood-diamonds:
-    name: "&cBlood Diamonds"
-    icon: REDSTONE
   triple-ores:
     name: "&cTriple Ores"
     icon: NETHER_STAR
-  vein-miner:
-    name: "&cVein Miner"
-    icon: IRON_PICKAXE
   timber:
     name: "&cTimber"
     icon: LOG
-  bowless:
-    name: "&cBow-less"
-    icon: BOW
   fireless:
     name: "&cFire-less"
-    icon: WATER_BUCKET
-  stackable-speed:
-    name: "&cStackable Speed"
+    icon: LAVA_BUCKET
+  double-health:
+    name: "&cDouble Health"
+    icon: APPLE
+  no-fall:
+    name: "&cNo Fall"
+    icon: FEATHER
+  increasing-speed:
+    name: "&cIncreasing Speed"
     icon: POTION:8226
-  random-switch:
-    name: "&cRandom Switch"
-    icon: LEVER
+  enchanted-death:
+    name: "&cEnchanted Death"
+    icon: ENCHANTMENT_TABLE
+  one-heal:
+    name: "&cOne Heal"
+    icon: GOLD_HOE
+    heal-item: GOLD_HOE
+    heal-item-name: '&bRefill Health'
+    heal-item-desc:
+      - '&aCompletely refills health'
+      - '&9Can only be used once!'
+  double-or-nothing:
+    name: "&cDouble-or-Nothing"
+    icon: CHEST
 
 teams:
   team01:
@@ -104,48 +117,84 @@ teams:
     icon: INK_SACK:11
 
 scoreboards:
-  header: "  &6&lSkyPVP &5UHC"
+  header: "&5&lAutoUHC"
   gameScoreboard:
+    - "{date}"
     - ""
+    - "{timerName}"
     - "{timer}"
     - ""
-    - "{team}"
-    - ""
+    - "{mode}"
     - "Server: &a{server}"
+    - "Kills: &c{gameKills}"
     - ""
-    - "Your kills: &c{game_kills}"
-    - "Total kills: &c{total_game_kills}"
+    - "&ewww.nauticmc.com"
   lobbyScoreboard:
+    - "{date}"
     - ""
     - "Server: &a{server}"
     - "Players: {onlinePlayers}/{maxPlayers}"
     - ""
-    - "{mode}"
-    - "{lobbyTimer}"
+    - "{timer}"
     - ""
-    - "KDR: &c{kdr}"
-    - "Kills: &c{kills}"
+    - "{mode}"
+    - "&ewww.nauticmc.com"
 
 messages:
-  prefix: "&8[&6SkyPVPUHC&8]"
+  prefix: "&8[&5UHC&8]"
   recipe-disabled: "&cThat crafting recipe has been disabled."
   player-died: "&3{player} &cwas slain!"
   eliminated: "&2Good game! You were the &c{standing} &2player alive. You had &3{kills} &cKills &2and your k:d is &c{kdr}&2."
-  player-joined-team: "&c{player} &ejoined {team}&e."
+  player-joined-team: "&a{player} &ejoined {team}&e."
   not-enough-players: "&eThere are no longer enough players to begin a match. A minimum of &c{numPlayers} &ePlayers is required to start this match."
   lobby-timer-begun: "&eThe game countdown has begun!"
   game-will-start: "&eThe game will begin in &a{seconds}&e."
   deathmatch-begun: "&cDeathmatch has begun! &4&lFIGHT!"
-  waitingForPlayers: "&eWaiting for more players..."
+  date-format: "MM/dd/yy"
+  teammode: "Teams"
+  solo-mode: "Solo"
+  unexpected-error: "&cAn unexpected error has occurred!"
+  force-start-unavailable: "&cForce-start voting is unavailable at this time."
+  waiting-for-players: "&eWaiting for more players..."
+  not-enough-players: "&cThere aren't enough players to initiate a force-start."
+  players-remaining: "&eThere are &c{alivePlayers} &eplayers remaining!"
+  teams-remaining: "&eThere are &c{aliveTeams} &eteams remaining!"
+  vote-success: "&2&lSUCCESS! &r&eYour vote for a force-start has been acknowledged!"
+  force-start-success: "&c&lOVERRIDE! &r&aEnough players have voted for a force-start! The match will begin shortly!"
+  force-start-success-admin: "&c&lOVERRIDE! &r&aA match admin has force-started the match! The match will begin shortly!"
+  move-disabled: "&cYou cannot move until &dGrace Period &cbegins!"
+  teleported-within-border: "&eYou have been relocated within the new border."
+  grace-period-begin: "&dGrace Period has begun!"
+  grace-period-ending: "&eGrace Period ends in &c{seconds} &eseconds."
+  grace-period-ended: "&aGrace Period has ended. &4&lFIGHT!"
+  teleported-to-surface: "&aYou have been teleported to the surface!"
+  already-on-surface: "&cYou are already on the surface!"
+  surface-already-used: "&cSorry! You don't have any more uses of the surface command left in this match."
+  health-refilled: "&aYour health has been replenished!"
+  must-be-in-match: "&cYou must be in a match to execute that command!"
+  must-be-in-team-match: "&cYou must be in a team match to execute that command!"
+  attempt-self-kick: "&cError: &4You cannot kick yourself!"
+  player-kicked: "&e{player} &awas kicked from the match!"
+  player-not-found: "&cError: &4The player specified could not be found."
+  no-permission: "&cError: &4You don't have permission to execute that command!"
+  mustnt-be-in-combat: "&cError: &4You can't execute that command while in-combat!"
+  must-be-player: "&cError: &4You must be a player to execute that command!"
+  team-chat-disabled: "&aYou are no longer speaking in team chat."
+  team-chat-enabled: "&eYou are now speaking in team chat."
+  host-prefix: "&c[&4HOST&c]"
+  spectate-prefix: "&7[SPEC]"
+  admin-prefix: "&2[&eADMIN&2]"
+  name-suffix: "&5(&e{wins}&5)"
+  welcome: "&cIgnore"
   kits: "&cKit Selector"
   teams: "&2Team Selector"
   team: "Team"
   not-selected: "Not Selected"
-  solo: "Solo Match"
+  solo: "Free-For-All"
   members: "Members"
-  teamRoster: "&8{members}/{maxMembers}"
+  team-roster: "&8{members}/{maxMembers}"
   available: "&2&oAvailable"
   full: "&4&lFULL"
   not-unlocked: "&cNot unlocked yet!"
   click-to-select: "&eClick to select!"
-  finderCompass: "&b&lTeam Locator"
+  finder-compass: "&b&lTeam Locator"

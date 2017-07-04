@@ -15,8 +15,10 @@ public class MapShrinkGameState extends TimedGameState {
 	 */
 
 	public void onEnter() {
-		timer = TimerUtils.createTimer(main, "Map Shrink", main.getProfile().getBeginBorderShrinkTime());
-		UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("gracePeriodEnded"), 
+		stateMgr.setTimer(TimerUtils.createTimer(main, "Map Shrink", 
+		        main.getProfile().getBeginBorderShrinkTime()));
+		timer = stateMgr.getTimer();
+		UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("grace-period-ended"), 
 				main.getSettings().getStateUpdateSound());
 		super.onEnter();
 	}

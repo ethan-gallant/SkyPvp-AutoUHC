@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -15,6 +16,7 @@ import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCScoreboard;
 import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.menu.Menu;
+import net.md_5.bungee.api.ChatColor;
 
 public class UHCPlayer {
 
@@ -30,6 +32,9 @@ public class UHCPlayer {
     private int gamesWon;
     private int kills;
     private int deaths;
+
+    // The number of match tokens this player has.
+    private int tokens;
 
     // These are temporary game statistics.
     // Kills this player has gotten during the current match
@@ -51,6 +56,9 @@ public class UHCPlayer {
     // The last time the player was warned about being frozen.
     private long freezeCooldownMs;
 
+    // The last time we updated the player's nearest team member.
+    private long lastCompassUpdateMs;
+
     /**
      * Creates a new UHC representation of a {@link Player}.
      * @param {@link UUID} id - UUID of the player.
@@ -58,9 +66,11 @@ public class UHCPlayer {
      * @param int gamesWon - The amount of games won.
      * @param int kills - The amount of kills.
      * @param int deaths - The amount of deaths.
+     * @param int tokens - The amount of match tokens.
      */
 
-    public UHCPlayer(UUID id, int gamesPlayed, int gamesWon, int kills, int deaths) {
+    public UHCPlayer(UUID id, int gamesPlayed, int gamesWon, int kills, int deaths,
+            int tokens) {
         this.uuid = id;
         this.state = PlayerState.ACTIVE;
         this.gamesPlayed = gamesPlayed;
@@ -68,6 +78,7 @@ public class UHCPlayer {
         this.kills = kills;
         this.gameKills = 0;
         this.deaths = deaths;
+        this.tokens = tokens;
         this.activeMenu = null;
         this.team = null;
         this.scoreboard = null;
@@ -76,6 +87,7 @@ public class UHCPlayer {
         this.combatTagger = null;
         this.tagTimeMs = 0;
         this.freezeCooldownMs = System.currentTimeMillis();
+        this.lastCompassUpdateMs = System.currentTimeMillis();
     }
 
     /**
@@ -90,6 +102,7 @@ public class UHCPlayer {
         // Switch our state to "SPECTATING" and launch
         // us upward.
         setState(PlayerState.SPECTATING);
+        p.setFoodLevel(20);
         p.setVelocity(new Vector(0, 1, 0));
         p.setAllowFlight(true);
 
@@ -140,6 +153,19 @@ public class UHCPlayer {
         p.setHealth(p.getMaxHealth());
         p.setFoodLevel(20);
         p.getActivePotionEffects().clear();
+        p.setFlying(false);
+
+        if(!p.getWorld().getName().equals(Globals.LOBBY_WORLD_NAME)) {
+            World world = SkyPVPUHC.get().getServer().getWorld(Globals.LOBBY_WORLD_NAME);
+
+            try {
+                p.teleport(world.getSpawnLocation());
+            } catch (NullPointerException e) {
+                p.sendMessage(SkyPVPUHC.get().getMessages().getMessage("unexpected-error"));
+                SkyPVPUHC.get().sendConsoleMessage(ChatColor.RED + "Attempted to teleport player "
+                        + "back to lobby world, however, the world didn't exist in time.");
+            }
+        }
 
         inTeamChat = false;
     }
@@ -350,6 +376,23 @@ public class UHCPlayer {
     }
 
     /**
+     * Increments the amount of match tokens.
+     */
+
+    public void incrementTokens() {
+        tokens++;
+    }
+
+    /**
+     * Fetches the amount of match tokens.
+     * @return int
+     */
+
+    public int getTokens() {
+        return this.tokens;
+    }
+
+    /**
      * Fetches this player's kill-death ratio.
      * @return int (kills divided by deaths)
      */
@@ -367,7 +410,7 @@ public class UHCPlayer {
     public String toMySQLUpdate() {
         return String.format(Globals.TABLE_ENTRY_UPDATE,
                 Globals.TABLE_NAME, gamesPlayed, gamesWon, 
-                kills, deaths, uuid.toString());
+                kills, deaths, tokens, uuid.toString());
     }
 
     /////////////////////////////////////////////////////////
@@ -420,6 +463,25 @@ public class UHCPlayer {
 
     public long getLastFreezeWarning() {
         return this.freezeCooldownMs;
+    }
+
+    /**
+     * Resets the last compass update time to the
+     * current System time in milliseconds.
+     */
+
+    public void resetCompassUpdateTime() {
+        this.lastCompassUpdateMs = System.currentTimeMillis();
+    }
+
+    /**
+     * Returns the last time (in milliseconds)
+     * that we updated the team finder compass.
+     * @return long
+     */
+
+    public long getLastCompassUpdateTime() {
+        return this.lastCompassUpdateMs;
     }
 
     /**

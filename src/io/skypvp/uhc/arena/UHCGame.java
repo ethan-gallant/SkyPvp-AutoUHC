@@ -2,6 +2,7 @@ package io.skypvp.uhc.arena;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
+import java.util.Iterator;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -13,6 +14,7 @@ import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.WorldHandler;
 import io.skypvp.uhc.player.UHCPlayer;
+import io.skypvp.uhc.player.UHCPlayer.PlayerState;
 import io.skypvp.uhc.scenario.Scenario;
 import io.skypvp.uhc.scenario.ScenarioType;
 import net.md_5.bungee.api.ChatColor;
@@ -21,15 +23,21 @@ public class UHCGame {
 
     final SkyPVPUHC main;
     private HashSet<Scenario> scenarios;
+    
+    private int playersAlive;
+    private int teamsAlive;
 
     /**
-     * Creates a new container for handling scenarios
+     * Creates a new container for handling scenarios and
+     * various temporary match variables.
      * @param {@link SkyPVPUHC} instance of the main class of the plugin.
      */
 
     public UHCGame(SkyPVPUHC instance) {
         this.main = instance;
         this.scenarios = new HashSet<Scenario>();
+        this.playersAlive = 0;
+        this.teamsAlive = 0;
     }
 
     /**
@@ -134,6 +142,8 @@ public class UHCGame {
 
         // Let's reset the variables for the next match.
         scenarios.clear();
+        teamsAlive = 0;
+        playersAlive = 0;
     }
 
     /**
@@ -159,6 +169,73 @@ public class UHCGame {
 
     public HashSet<Scenario> getScenarios() {
         return this.scenarios;
+    }
+    
+    /**
+     * Sets the amount of teams alive.
+     * @param int teams
+     */
+    
+    public void setAliveTeams(int teams) {
+        this.teamsAlive = teams;
+    }
+    
+    /**
+     * Recalculates the amount of teams currently alive.
+     * NOTE: This will set the amount of teams alive to 0 before recalculating.
+     */
+    
+    public void recalculateAliveTeams() {
+        this.teamsAlive = 0;
+        
+        for(Team team : UHCSystem.getTeams()) {
+            for(UHCPlayer p : team.getMembers()) {
+                if(p.getState() == PlayerState.ACTIVE) {
+                    teamsAlive++;
+                    break;
+                }
+            }
+        }
+    }
+    
+    public int getAliveTeams() {
+        return this.teamsAlive;
+    }
+    
+    /**
+     * Sets the amount of players alive.
+     * @param int players
+     */
+    
+    public void setAlivePlayers(int players) {
+        this.playersAlive = players;
+    }
+    
+    /**
+     * Recalculates the amount of players currently alive.
+     * NOTE: This will set the amount of players alive to 0 before recalculating.
+     */
+    
+    public void recalculateAlivePlayers() {
+        this.playersAlive = 0;
+        Iterator<UHCPlayer> iterator = main.getOnlinePlayers().values().iterator();
+        
+        while(iterator.hasNext()) {
+            UHCPlayer next = iterator.next();
+            
+            if(next.getState() == PlayerState.ACTIVE) {
+                playersAlive++;
+            }
+        }
+    }
+    
+    /**
+     * Fetches the amount of players currently alive.
+     * @return int
+     */
+    
+    public int getAlivePlayers() {
+        return this.playersAlive;
     }
 
     /**

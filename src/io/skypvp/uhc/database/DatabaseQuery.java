@@ -17,6 +17,11 @@ public class DatabaseQuery {
 		return this.connection;
 	}
 
+	/**
+	 * Fetches the {@link ResultSet} associated with this query.
+	 * @return {@link ResultSet} or null if obtained ResultSet was empty.
+	 */
+	
 	public ResultSet getResultSet() {
 		return this.rs;
 	}

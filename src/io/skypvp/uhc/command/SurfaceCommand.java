@@ -54,28 +54,27 @@ public class SurfaceCommand extends CommandBase {
 	public void run(CommandSender sender, String[] args) {
 		// This is a safe casting because this method isn't called unless a player is executing this command.
 		// Refer to: InGameRequirement.java
+	    Messages msgs = SkyPVPUHC.get().getMessages();
 		Player p = (Player) sender;
 		UHCPlayer uhcPlayer = SkyPVPUHC.get().getOnlinePlayers().get(p.getUniqueId());
 
 		if(uhcPlayer != null) {
-			final Messages msgs = main.getMessages();
-
 			if(!users.contains(p.getUniqueId())) {
 				Block b = getHighestBlock(p.getLocation());
 				if(b == p.getLocation().getBlock()) {
-					p.sendMessage(msgs.color(msgs.getRawMessage("alreadySurfaced")));
+					p.sendMessage(msgs.getMessage("already-on-surface"));
 				}else {
 					p.teleport(new Location(p.getLocation().getWorld(), b.getLocation().getX(), b.getLocation().getY() + 1.0, 
 							b.getLocation().getZ()));
 					users.add(p.getUniqueId());
-					p.sendMessage(msgs.color(msgs.getRawMessage("teleportedToSurface")));
+					p.sendMessage(msgs.getMessage("teleported-to-surface"));
 				}
 			}else {
-				p.sendMessage(msgs.color(msgs.getRawMessage("surfaceAlreadyUsed")));
+				p.sendMessage(msgs.getMessage("surface-already-used"));
 			}
 
 		}else {
-			sender.sendMessage(ChatColor.RED + "An unexpected error has occurred.");
+			sender.sendMessage(msgs.getMessage("unexpected-error"));
 			throw new NullPointerException("Player tried to jump to the surface, but their UHCPlayer object does not exist!");
 		}
 	}

@@ -22,6 +22,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.DisplaySlot;
 
+import io.skypvp.uhc.arena.Profile;
 import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.menu.Menu;
 import io.skypvp.uhc.player.UHCPlayer;
@@ -43,6 +44,27 @@ public class UHCSystem {
         scenarioDrops = new HashMap<Block, ScenarioDrops>();
         GHOST_TEAM = new ScoreboardTeam(new Scoreboard(), "spectators");
         GHOST_TEAM.setCanSeeFriendlyInvisibles(true);
+    }
+    
+    /**
+     * Resets the game system for a new match.
+     * Called from {@link SetupGameState}
+     */
+    
+    public static void reset() {
+        // Let's clear out the teams
+        for(Team team : teams) {
+            team.getMembers().clear();
+        }
+        
+        // Let's clear the scenario drops.
+        scenarioDrops.clear();
+        
+        // Let's reset the UHCGame variables.
+        SkyPVPUHC.get().getGame().reset();
+        
+        // Let's reset what our commands could be storing.
+        SkyPVPUHC.get().getCommandPool().processMatchReset();
     }
 
     /**
@@ -88,16 +110,21 @@ public class UHCSystem {
 
     public static Location getRandomSpawnPoint(double minX, double maxX, double minZ, double maxZ) {
         World world = SkyPVPUHC.get().getWorldHandler().getGameWorld().getCBWorld();
+        List<Material> illegalTypes = Arrays.asList(Material.LAVA, Material.STATIONARY_LAVA, Material.WATER, 
+                Material.STATIONARY_WATER, Material.CACTUS, 
+                Material.WEB);
         double x, z;
-        Block highestBlock;
+        Block highestBlock, immediateAbove, above2;
 
         do {
             x = ThreadLocalRandom.current().nextDouble(minX, maxX);
             z = ThreadLocalRandom.current().nextDouble(minZ, maxZ);
             highestBlock = world.getHighestBlockAt((int) x, (int) z);
-        } while(Arrays.asList(Material.LAVA, Material.STATIONARY_LAVA, Material.WATER, 
-                Material.STATIONARY_WATER, Material.CACTUS, 
-                Material.WEB).contains(highestBlock.getType()));
+            immediateAbove = world.getBlockAt((int) x, highestBlock.getY() + 1, (int) z);
+            above2 = world.getBlockAt((int) x, highestBlock.getY() + 2, (int) z);
+        } while(illegalTypes.contains(highestBlock.getType()) 
+                || illegalTypes.contains(immediateAbove)
+                || illegalTypes.contains(above2));
 
         return new Location(world, x, highestBlock.getLocation().getY() + 1.0, z);
     }
@@ -211,6 +238,22 @@ public class UHCSystem {
     }
 
     /////////////////////////////////////////////////////////
+
+    /**
+     * Checks if a specified Player is an admin of this match.
+     * @param {@link Player} player
+     * @return boolean true/false flag
+     */
+
+    public static boolean isMatchAdmin(Player player) {
+        if(player == null) return false;
+
+        Profile profile = SkyPVPUHC.get().getProfile();
+        String uuid = player.getUniqueId().toString();
+
+        return (player.hasPermission("uhc.admin") || player.isOp()) ||
+                (profile.getOwner() != null && profile.getOwner().equals(uuid));
+    }
 
     /**
      * Returns a String like 1st, 2nd, 3rd, 5th, etc.

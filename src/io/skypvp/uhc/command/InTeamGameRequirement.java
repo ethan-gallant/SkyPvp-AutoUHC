@@ -4,7 +4,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import io.skypvp.uhc.SkyPVPUHC;
-import net.md_5.bungee.api.ChatColor;
 
 public class InTeamGameRequirement extends InGameRequirement {
 
@@ -16,7 +15,7 @@ public class InTeamGameRequirement extends InGameRequirement {
 	@Override
 	public void onFailed(CommandSender sender) {
 		if(sender instanceof Player) {
-			sender.sendMessage(ChatColor.RED + "You can only execute that command while in a team game.");
+			sender.sendMessage(SkyPVPUHC.get().getMessages().getMessage("must-be-in-team-match"));
 		}else {
 			super.onFailed(sender);
 		}

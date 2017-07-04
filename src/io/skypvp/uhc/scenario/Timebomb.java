@@ -131,6 +131,9 @@ public class Timebomb extends Scenario {
 		
 		// Let's cancel the clear task.
 		cancelClearTask();
+		
+		// Let's clear out the chests HashMap.
+		chests.clear();
 	}
 	
 }

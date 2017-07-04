@@ -47,7 +47,7 @@ public class TeamSelectorMenu extends Menu {
 
 			lore.add(" ");
 
-			String players = msgs.getRawMessage("teamRoster");
+			String players = msgs.getRawMessage("team-roster");
 			players = players.replaceAll("\\{members\\}", String.valueOf(team.getMembers().size()));
 			players = players.replaceAll("\\{maxMembers\\}", String.valueOf(main.getProfile().getTeamSize()));
 			lore.add(msgs.color(players));
@@ -87,7 +87,13 @@ public class TeamSelectorMenu extends Menu {
 		if(!main.getProfile().usesRandomTeams()) {
 			if(team != null && team.getMembers().size() < main.getProfile().getTeamSize()) {
 				Team pTeam = viewer.getTeam();
-				if(pTeam != null) pTeam.removeMember(viewer);
+				if(pTeam != null) {
+				    if(pTeam != team) {
+				        pTeam.removeMember(viewer);
+				    }else {
+				        return;
+				    }
+				}
 
 				viewer.setTeam(team);
 				team.addMember(viewer);

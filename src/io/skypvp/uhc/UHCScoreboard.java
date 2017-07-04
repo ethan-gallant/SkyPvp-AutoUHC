@@ -1,6 +1,9 @@
 package io.skypvp.uhc;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -12,8 +15,10 @@ import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 
 import io.skypvp.uhc.arena.Team;
+import io.skypvp.uhc.arena.state.GameStateManager;
 import io.skypvp.uhc.database.HikariDatabase;
 import io.skypvp.uhc.player.UHCPlayer;
+import io.skypvp.uhc.player.UHCPlayer.PlayerState;
 import io.skypvp.uhc.timer.MatchTimer;
 import net.md_5.bungee.api.ChatColor;
 
@@ -21,6 +26,8 @@ public class UHCScoreboard {
 
 	final SkyPVPUHC main;
 	final HikariDatabase database;
+	final GameStateManager gsm;
+	final Messages msgs;
 	final HashMap<Integer, String> lines;
 	private final String title, scoreboardType;
 	private DisplaySlot slot;
@@ -29,28 +36,46 @@ public class UHCScoreboard {
 
 	public UHCScoreboard(final SkyPVPUHC instance, final String scoreboard, final DisplaySlot slot) {
 		this.main = instance;
+        this.database = instance.getSettings().getDatabase();
+        this.gsm = main.getGameStateManager();
+        this.msgs = main.getMessages();
 		this.title = main.getSettings().getScoreboardHeader();
 		this.scoreboardType = scoreboard;
-		this.database = instance.getSettings().getDatabase();
 		this.lines = new HashMap<Integer, String>();
 		this.slot = slot;
 	}
 
 	private String getTimerName() {
-		if(main.getGameStateManager().getActiveState().toIndex() != 2) {
-			return main.getGameStateManager().getTimer().getName();
+		if(gsm.getActiveState().toIndex() != 2 && gsm.getTimer() != null) {
+			return gsm.getTimer().getName();
 		}
+		
 		return "";
+	}
+	
+	private String handleModeString(UHCPlayer player) {
+	    if(main.getProfile().isTeamMatch()) {
+	        Team team = player.getTeam();
+	        String teamName = (team != null) ? team.getName() : msgs.getRawMessage("not-selected");
+	        String msg = String.format("%s %s", msgs.getRawMessage("team"),
+	                teamName);
+	        return msgs.color(msg);
+	    }
+	    
+	    return "";
 	}
 
 	private String handleTimerString(MatchTimer timer) {
-		String clockTime = timer.toString();
-		if(timer.getName().equals("Starting")) {
+        String clockTime = "";
+        
+		if(timer == null) {
 			if(main.getGameStateManager().getActiveState().toIndex() != 2) {
 				clockTime = "Waiting...";
 				return clockTime;
 			}
 		}
+		
+		clockTime = timer.toString();
 
 		if(timer.getMinutes() == 0 && timer.getSeconds() <= 5) {
 			clockTime = ChatColor.RED + clockTime;
@@ -60,9 +85,25 @@ public class UHCScoreboard {
 
 		if(timer.getName().equals("Starting")) {
 			return timer.getName().concat(": ").concat(clockTime);
-		}else {
-			return clockTime;
 		}
+		
+		return clockTime;
+	}
+	
+	/**
+	 * Creates a line with the mode of the match and the
+	 * current date with the format defined in the config.
+	 * @return String like so: Teams 07/03/17
+	 */
+	
+	public String createDateLine() {
+	    Date date = new Date();
+	    SimpleDateFormat sdf = new SimpleDateFormat(msgs.getRawMessage("date-format"));
+	    String curDate = sdf.format(date);
+	    String mode = (main.getProfile().isTeamMatch()) ? msgs.getRawMessage("teammode") 
+	            : msgs.getRawMessage("solo-mode");
+	    
+	    return ChatColor.GRAY + String.format("%s %s", mode, curDate);
 	}
 
 	public void generate(UHCPlayer player) {
@@ -74,6 +115,20 @@ public class UHCScoreboard {
 				blankLine();
 			}else {
 				boolean isModeLine = line.indexOf("{mode}") != -1;
+				if(gsm.getActiveState().toIndex() < 2 
+				        && isModeLine && !main.getProfile().isTeamMatch()) {
+				    return;  
+				}else if(gsm.getActiveState().toIndex() > 2 && isModeLine) {
+		            if(main.getProfile().isTeamMatch()) {
+		                addLine(msgs.color(String.format("%s: &a%d", msgs.getRawMessage("teammode"), 
+		                        main.getGame().getAliveTeams())));
+		            }
+		            
+		            addLine(msgs.color(String.format("%s: &a%d", "Players",
+		                    main.getGame().getAlivePlayers())));
+		            blankLine();
+		        }
+				
 				line = line.replaceAll("\\{server\\}", main.getSettings().getServerName());
 				line = line.replaceAll("\\{onlinePlayers\\}", String.valueOf(main.getServer().getOnlinePlayers().size()));
 				line = line.replaceAll("\\{maxPlayers\\}", String.valueOf(main.getProfile().getMaxPlayers()));
@@ -83,21 +138,31 @@ public class UHCScoreboard {
 				line = line.replaceAll("\\{gameKills\\}", String.valueOf(player.getGameKills()));
 				line = line.replaceAll("\\{tGameKills\\}", String.valueOf(getGameKills(player)));
 				line = line.replaceAll("\\{timerName\\}", String.valueOf(getTimerName()));
-				if(!main.getGameStateManager().getTimer().getName().equalsIgnoreCase("Game Over")) {
-					line = line.replaceAll("\\{timer\\}", handleTimerString(main.getGameStateManager().getTimer()));
-				}
-				line = line.replaceAll("\\{lobbyTimer\\}", handleTimerString(main.getGameStateManager().getTimer()));
-				line = line.replaceAll("\\{mode\\}", (main.getProfile().isTeamMatch()) ? main.getMessages().getRawMessage("team") : main.getMessages().getRawMessage("solo"));
+				line = line.replaceAll("\\{timer\\}", handleTimerString(main.getGameStateManager().getTimer()));
+				line = line.replaceAll("\\{mode\\}", handleModeString(player));
+				line = line.replaceAll("\\{date\\}", createDateLine());
 				addLine(ChatColor.translateAlternateColorCodes('&', line));
 
 				if(isModeLine && main.getProfile().isTeamMatch()) {
 					Team team = player.getTeam();
 					if(team != null) {
-						addLine(ChatColor.translateAlternateColorCodes('&', team.getName()));
-					}else {
-						addLine(ChatColor.translateAlternateColorCodes('&', main.getMessages().getRawMessage("not-selected")));
+					    Iterator<UHCPlayer> iterator = team.getMembers().iterator();
+					    
+					    while(iterator.hasNext()) {
+					        UHCPlayer member = iterator.next();
+					        ChatColor color = ChatColor.YELLOW;
+					        
+					        if(member.getState() == PlayerState.SPECTATING) {
+					            color = ChatColor.GRAY;
+					        }else if(member.getBukkitPlayer().getHealth() < member.getBukkitPlayer().getMaxHealth()) {
+					            color = ChatColor.RED;
+					        }
+					        
+					        addLine(String.format("%s%s", color, 
+					                ChatColor.stripColor(member.getBukkitPlayer().getName())));
+					    }
 					}
-
+					
 					blankLine();
 				}
 			}

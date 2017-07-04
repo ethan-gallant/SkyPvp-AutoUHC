@@ -27,6 +27,13 @@ public class GameStateManager {
     private GameState activeState;
     private MatchTimer timer;
     private BukkitTask stateThread;
+    
+    // The amount of players online when a force-start was passed.
+    private volatile int forcestartPlayers;
+    
+    // This is if an admin forced match start or not.
+    private volatile boolean adminForcedStart;
+    
     private final ArrayList<GameState> states;
 
     public GameStateManager(SkyPVPUHC instance) {
@@ -35,6 +42,10 @@ public class GameStateManager {
         this.timer = null;
         this.stateThread = null;
         this.states = new ArrayList<GameState>();
+        
+        // Variables relating to force-start.
+        this.forcestartPlayers = -1;
+        this.adminForcedStart = false;
 
         // Sets up our states
         states.add(new SetupGameState(main, this));
@@ -61,16 +72,11 @@ public class GameStateManager {
 
             if(pTeam.getMembers().size() == 0) {
                 String teamEliminated = UHCSystem.getTeamNameWithPrefix(pTeam).concat(" has been eliminated!");
-                UHCSystem.broadcastMessageAndSound(main.getMessages().color(teamEliminated), 
+                UHCSystem.broadcastMessageAndSound(main.getMessages().constructMessage(teamEliminated), 
                         Sound.ENDERDRAGON_HIT, 2F);
             }
-
-            final ArrayList<Team> teamsAlive = new ArrayList<Team>();
-            for(Team team : UHCSystem.getTeams()) {
-                if(team.getMembers().size() > 0) {
-                    teamsAlive.add(team);
-                }
-            }
+            
+            main.getGame().setAliveTeams(main.getGame().getAliveTeams() - 1);
         }else {
             // This is a free-for-all match.
         }
@@ -79,8 +85,6 @@ public class GameStateManager {
     public void think() {
         if(activeState == null) {
             setActiveState(getStates().get(0), false);
-        }else if(activeState.canContinue() && !activeState.canMoveOn()) {
-            activeState.run();
         }else if(!activeState.canContinue() && !activeState.canMoveOn()) {
             activeState.onFailure();
 
@@ -95,6 +99,8 @@ public class GameStateManager {
             GameState nextState = (activeState.toIndex() < states.size()) ? (getStates().get(activeState.toIndex() + 1)) : getStates().get(0);
             setActiveState(nextState, true);
         }
+        
+        activeState.run();
     }
 
     public void startRunning() {
@@ -118,7 +124,12 @@ public class GameStateManager {
 
     public void sendPlayerToRandomLobby(Player p) {
         ArrayList<UHCLobbyResponse> lobbies = main.getSettings().getJedis().getAvailableLobbies();
-        UHCLobbyResponse lobby = lobbies.get(ThreadLocalRandom.current().nextInt(0, lobbies.size()));
+        UHCLobbyResponse lobby = null;
+        
+        // ThreadLocalRandom will throw an error if lobbies.size() is 0.
+        if(lobbies.size() > 0) {
+            lobby = lobbies.get(ThreadLocalRandom.current().nextInt(0, lobbies.size())); 
+        }
 
         if(lobby != null) {
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -157,7 +168,7 @@ public class GameStateManager {
      * Sets the active state, enters it, and "exits" the old one if
      * a state was active previously.
      * @param {@link GameState} state - The state to become active.
-     * @param callExit - If the {@link GameState.#onExit()} should be called or not.
+     * @param boolean callExit - If the {@link GameState.#onExit()} should be called or not.
      * @throws IllegalArgumentException - {@link GameState} must be inside of the "states" ArrayList.
      */
 
@@ -178,7 +189,7 @@ public class GameStateManager {
         UHCJedis jedis = main.getSettings().getJedis();
         if(jedis != null) jedis.updateStatus();
     }
-
+    
     /**
      * Fetches the current GameState.
      * @return {@link GameState}
@@ -187,7 +198,7 @@ public class GameStateManager {
     public GameState getActiveState() {
         return this.activeState;
     }
-
+    
     /**
      * Fetches the list of GameStates.
      * @return {@link ArrayList<GameState>}
@@ -196,6 +207,46 @@ public class GameStateManager {
     public ArrayList<GameState> getStates() {
         return this.states;
     }
+    
+    ///////////////////////////////////////////////////////
+    
+    /**
+     * Sets the amount of players online when a force-start was called.
+     * @param int amount - The amount of players online or -1 to reset.
+     */
+    
+    public void setForceStartPlayers(int amount) {
+        this.forcestartPlayers = amount;
+    }
+    
+    /**
+     * Fetches the amount of players online when a force-start was called.
+     * @return int amount
+     */
+    
+    public int getForceStartPlayers() {
+        return this.forcestartPlayers;
+    }
+    
+    /**
+     * Sets if an admin forced the start of the match or not.
+     * @param boolean flag
+     */
+    
+    public void setAdminForcedStart(boolean flag) {
+        this.adminForcedStart = flag;
+    }
+    
+    /**
+     * Fetches if an admin forced the start of the match.
+     * @return boolean true/false flag
+     */
+    
+    public boolean didAdminForceStart() {
+        return this.adminForcedStart;
+    }
+    
+    ///////////////////////////////////////////////////////
 
     /**
      * Fetches the state thread.
@@ -205,4 +256,5 @@ public class GameStateManager {
     public BukkitTask getStateThread() {
         return this.stateThread;
     }
+    
 }

@@ -83,5 +83,22 @@ public abstract class GameState implements IGameState, Listener {
     public FailureLogic getFailureLogic() {
         return this.failureLogic;
     }
+    
+    /**
+     * Tests the default continuation logic and returns if it passed or not.
+     * @return boolean true/false flag
+     */
+    
+    public boolean getDefaultContinuationLogic() {
+        int onlinePlayers = main.getOnlinePlayers().keySet().size();
+        int amtNeeded = (int) (main.getProfile().getMaxPlayers() * 0.6);
+        int fsPlayers = stateMgr.getForceStartPlayers();
+
+        return (stateMgr.didAdminForceStart() && 
+                (fsPlayers != -1 && onlinePlayers >= fsPlayers)) ||
+                (!stateMgr.didAdminForceStart() && 
+                        (fsPlayers != -1 && onlinePlayers >= fsPlayers)) ||
+                (onlinePlayers >= amtNeeded);
+    }
 
 }

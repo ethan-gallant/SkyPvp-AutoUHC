@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -25,6 +26,7 @@ import org.bukkit.plugin.PluginManager;
 import io.skypvp.uhc.Globals;
 import io.skypvp.uhc.Messages;
 import io.skypvp.uhc.SkyPVPUHC;
+import io.skypvp.uhc.UHCSystem;
 import io.skypvp.uhc.arena.Profile;
 import io.skypvp.uhc.arena.Team;
 import io.skypvp.uhc.arena.UHCGame;
@@ -61,8 +63,8 @@ public class ArenaPlayerEventsListener implements Listener {
 
 	private void pointCompassToNearestTeamMember(UHCPlayer uhcPlayer) {
 		if(uhcPlayer == null) return;
-
-		Team team = uhcPlayer.getTeam();
+		
+	    Team team = uhcPlayer.getTeam();
 
 		double shortestDist = Double.MAX_VALUE;
 		Location target = null;
@@ -82,6 +84,7 @@ public class ArenaPlayerEventsListener implements Listener {
 
 		if(target != null) {
 			uhcPlayer.getBukkitPlayer().setCompassTarget(target);
+			uhcPlayer.resetCompassUpdateTime();
 		}
 	}
 
@@ -105,7 +108,7 @@ public class ArenaPlayerEventsListener implements Listener {
 	public void onPlayerChat(AsyncPlayerChatEvent evt) {
 		Player p = evt.getPlayer();
 		UHCPlayer uhcPlayer = instance.getOnlinePlayers().get(p.getUniqueId());
-		if(uhcPlayer == null || !uhcPlayer.isInTeamChat()) return;
+		if(uhcPlayer == null) return;
 
 		Messages msgs = instance.getMessages();
 		String format = "";
@@ -113,14 +116,16 @@ public class ArenaPlayerEventsListener implements Listener {
 		// Let's add the host prefix if needed.
 		String matchOwner = instance.getProfile().getOwner();
 		if(matchOwner != null && matchOwner.equals(uhcPlayer.uuid)) {
-			format = format.concat(msgs.getRawMessage("hostPrefix"));
+			format = format.concat(msgs.getRawMessage("host-prefix"));
+		}else if(UHCSystem.isMatchAdmin(p)) {
+		    format = format.concat(msgs.getRawMessage("admin-prefix"));
 		}
 
 		// Let's setup the spectate prefix.
-		String spectatePrefix = msgs.getRawMessage("spectatePrefix");
+		String spectatePrefix = msgs.getRawMessage("spectate-prefix");
 
 		// Let's setup the wins suffix.
-		String suffix = instance.getMessages().getRawMessage("nameSuffix");
+		String suffix = instance.getMessages().getRawMessage("name-suffix");
 		suffix = suffix.replaceAll("\\{wins\\}", String.valueOf(uhcPlayer.getGamesWon()));
 
 		// If the player is spectating, we only want spectators to see the message.
@@ -153,7 +158,7 @@ public class ArenaPlayerEventsListener implements Listener {
 			return;
 		}
 
-		if(profile.isTeamMatch() && gsm.getActiveState().toIndex() > 3) {
+		if(profile.isTeamMatch() && gsm.getActiveState().toIndex() > 3 && uhcPlayer.isInTeamChat()) {
 			// Great, the player is a team game that has already started and is past the "Preparing" stage.
 			Team team = uhcPlayer.getTeam();
 			String teamColor = team.getName().substring(0, 2);
@@ -174,7 +179,7 @@ public class ArenaPlayerEventsListener implements Listener {
 			return;
 		}
 
-		if(profile.isTeamMatch()) {
+		if(profile.isTeamMatch() && uhcPlayer.getTeam() != null) {
 			format = format.concat(" " + uhcPlayer.getTeam().getName().substring(0, 2));
 		}else {
 			format = format.concat(" &a");
@@ -193,7 +198,7 @@ public class ArenaPlayerEventsListener implements Listener {
 			Player p = (Player) ent;
 			UHCPlayer uhcPlayer = instance.getOnlinePlayers().get(p.getUniqueId());
 
-			if(uhcPlayer != null && isPlayerInGame(uhcPlayer) && !Globals.INVULNERABILITY_PERIODS.contains(gsm.getActiveState().toIndex())) {
+			if(uhcPlayer != null && isPlayerInGame(uhcPlayer) && gsm.getActiveState().toIndex() > 4) {
 				if(p.getHealth() - evt.getDamage() > 0.0) {
 					pMgr.callEvent(new UHCPlayerDamageEvent(uhcPlayer, evt));
 				}else {
@@ -240,11 +245,21 @@ public class ArenaPlayerEventsListener implements Listener {
 					dmgEvt.setCancelled(true);
 					return;
 				}
-			}else {
-				// The "damaged" player is in combat with "damager".
-				damaged.setInCombatWith(damager);
 			}
+			
+			// The "damaged" player is in combat with "damager".
+			damaged.setInCombatWith(damager);
 		}
+	}
+	
+	@EventHandler
+	public void onFoodLevelChange(FoodLevelChangeEvent evt) {
+	    UHCPlayer p = instance.getOnlinePlayers().get(((Player) evt.getEntity()).getUniqueId());
+	    
+	    if(p != null && Globals.INVULNERABILITY_PERIODS.contains(gsm.getActiveState().toIndex())
+	            || p.getState() == PlayerState.SPECTATING) {
+	        evt.setCancelled(true);
+	    }
 	}
 
 	@EventHandler
@@ -255,7 +270,7 @@ public class ArenaPlayerEventsListener implements Listener {
 		if(damaged instanceof Player) {
 			Player hit = (Player) damaged;
 			UHCPlayer hitUHC = instance.getOnlinePlayers().get(hit.getUniqueId());
-			if(hitUHC == null) return;
+			if(hitUHC == null || gsm.getActiveState().toIndex() < 5) return;
 
 			if(ent instanceof Player) {
 				Player hitter = (Player) ent;
@@ -308,8 +323,10 @@ public class ArenaPlayerEventsListener implements Listener {
 						uhcPlayer.resetFreezeCooldown();
 					}
 				}
-			}else if(profile.isTeamMatch()) {
-				pointCompassToNearestTeamMember(uhcPlayer);
+			}else if(gsm.getActiveState().toIndex() > 3 && profile.isTeamMatch()) {
+			    if(System.currentTimeMillis() >= uhcPlayer.getLastCompassUpdateTime() + Globals.COMPASS_UPDATE_TIME) {
+		             pointCompassToNearestTeamMember(uhcPlayer);
+			    }
 			}
 		}
 	}
@@ -330,6 +347,10 @@ public class ArenaPlayerEventsListener implements Listener {
 					pMgr.callEvent(new UHCPlayerKillUHCPlayerEvent(uhcKiller, uhcKilled));
 				}
 			}
+		}else if(damaged instanceof Player) {
+		    if(gsm.getActiveState().toIndex() < 5) {
+		        evt.setCancelled(true);
+		    }
 		}
 	}
 

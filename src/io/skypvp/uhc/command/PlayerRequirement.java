@@ -3,6 +3,8 @@ package io.skypvp.uhc.command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import io.skypvp.uhc.SkyPVPUHC;
+
 public class PlayerRequirement extends Requirement {
 
 	@Override
@@ -12,7 +14,7 @@ public class PlayerRequirement extends Requirement {
 
 	@Override
 	public void onFailed(CommandSender sender) {
-		sender.sendMessage("You must be a player to execute this command.");
+		sender.sendMessage(SkyPVPUHC.get().getMessages().getMessage("must-be-player"));
 	}
 
 }

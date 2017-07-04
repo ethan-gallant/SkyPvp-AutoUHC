@@ -1,0 +1,22 @@
+######################################################
+#      - SkyPVPUHC [v1.0] Match Settings File -      #
+#         Created by xMakerx for Mystic HC           #
+######################################################
+initMapSize: 1000
+maxPlayers: 10
+private: false
+owner: null
+
+teamMode: true
+teamSize: 2
+friendlyFire: false
+randomTeams: false
+
+timings:
+  gracePeriodLength: 600
+  healPlayersAfter: 900
+  beginBorderShrink: 1200
+  gameplayTime: 1800
+
+scenarios: {}
+startingItems: {}

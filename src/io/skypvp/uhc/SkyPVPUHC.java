@@ -40,6 +40,7 @@ public class SkyPVPUHC extends JavaPlugin {
 	private boolean canContinue;
 
 	// Dependencies
+	private MultiverseCore multiverse;
 	private WorldBorder worldBorder;
 	private Economy economy;
 	
@@ -64,7 +65,6 @@ public class SkyPVPUHC extends JavaPlugin {
 		settings = new Settings(this);
 		profile = new Profile(this);
 		msgs = new Messages(this);
-		gsm = new GameStateManager(this);
 
 		settings.load();
 	}
@@ -82,7 +82,8 @@ public class SkyPVPUHC extends JavaPlugin {
 			setEnabled(false);
 			return;
 		}
-
+		
+		/*
 		// We're going to require the lobby world to be called a certain name.
 		if(getServer().getWorld(Globals.LOBBY_WORLD_NAME) == null) {
 			sendConsoleMessage(ChatColor.DARK_RED + 
@@ -90,10 +91,7 @@ public class SkyPVPUHC extends JavaPlugin {
 							Globals.LOBBY_WORLD_NAME));
 			disable();
 			return;
-		}
-
-		cmdPool = new CommandPool(this);
-		worldHdl = new WorldHandler(this);
+		}*/
 
 		// We need to be able to send messages to BungeeCord.
 		getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
@@ -101,7 +99,7 @@ public class SkyPVPUHC extends JavaPlugin {
 		worldBorder = (WorldBorder) getRequiredDependency("WorldBorder", WorldBorder.class);
 
 		// Let's make sure we have Multiverse-Core.
-		getRequiredDependency("Multiverse-Core", MultiverseCore.class);
+		multiverse = (MultiverseCore) getRequiredDependency("Multiverse-Core", MultiverseCore.class);
 
 		// This makes sure we have Vault.
 		JavaPlugin vault = (JavaPlugin) getServer().getPluginManager().getPlugin("Vault");
@@ -115,7 +113,7 @@ public class SkyPVPUHC extends JavaPlugin {
 				sendConsoleMessage(ChatColor.GREEN + String.format("Hooked into %s!", economy.getName()));
 			}else {
 				sendConsoleMessage(ChatColor.RED + "You must have an economy plugin installed to use this plugin!");
-				disable();
+				//disable();
 			}
 		}else {       
 		    sendConsoleMessage(ChatColor.DARK_RED + "Vault could not be found. You must install it to use this plugin.");
@@ -123,11 +121,18 @@ public class SkyPVPUHC extends JavaPlugin {
 		}
 
 		if(isEnabled()) {
+	        cmdPool = new CommandPool(this);
+	        worldHdl = new WorldHandler(this);
+	        gsm = new GameStateManager(this);
+	        
 			// We're register our events.
 			getServer().getPluginManager().registerEvents(new ArenaEventsListener(this, game), this);
 			getServer().getPluginManager().registerEvents(new TrafficEventsListener(this), this);
 			getServer().getPluginManager().registerEvents(new ArenaPlayerEventsListener(this), this);
 			getServer().getPluginManager().registerEvents(cmdPool, this);
+			
+			// Let's start the GameStateManager!
+			gsm.startRunning();
 		}
 	}
 	
@@ -210,6 +215,12 @@ public class SkyPVPUHC extends JavaPlugin {
 	            settings.getJedis().farewell();
 	        }
 		}
+	    
+	    // If the GameStateManager has been created and it's thinking,
+	    // let's stop the BukkiTask.
+	    if(gsm != null) {
+	        if(gsm.getStateThread() != null) gsm.getStateThread().cancel();
+	    }
 	}
 
 	/**
@@ -306,6 +317,17 @@ public class SkyPVPUHC extends JavaPlugin {
 
 	public WorldBorder getWorldBorder() {
 		return this.worldBorder;
+	}
+	
+    /**
+     * Fetches our hook into the {@link MultiverseCore} plugin.
+     * NOTE: If this returns null, the plugin most likely will be disabled
+     * shortly thereafter as the {@link WorldHandler} requires MultiverseCore.
+     * @return {@link MultiverseCore} hook or null.
+     */
+	
+	public MultiverseCore getMultiverse() {
+	    return this.multiverse;
 	}
 	
 	/**

@@ -56,6 +56,20 @@ public class TrafficEventsListener implements Listener {
             evt.allow();
         }
     }
+    
+    /**
+     * Handles the entrance of a new player to the server.
+     * This is called directly after we complete our async database stuff.
+     * @param {@link UHCPlayer} player - The brand new UHCPlayer object.
+     */
+    
+    public void handlePlayerEntrance(UHCPlayer player) {
+        // Let's let the current state know that a new player has arrived.
+        main.getGameStateManager().getActiveState().onPlayerJoin(player);
+
+        player.prepareForGame();
+        UHCSystem.handleLobbyArrival(main, player);
+    }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent evt) {
@@ -64,12 +78,9 @@ public class TrafficEventsListener implements Listener {
         new BukkitRunnable() {
 
             public void run() {
-                DatabaseQuery query = database.query(String.format("SELECT * FROM %s WHERE UUID='%s';", Globals.TABLE_NAME, p.getUniqueId())); 
+                DatabaseQuery query = database.query(String.format(Globals.QUERY_USER, Globals.TABLE_NAME, p.getUniqueId())); 
                 ResultSet rs = query.getResultSet();
                 UHCPlayer player;
-
-                // Let's close the connection that query used.
-                database.closeConnection(query.getConnection());
 
                 // We need to handle creating new profiles and obtaining them.
                 if(rs == null) {
@@ -82,41 +93,47 @@ public class TrafficEventsListener implements Listener {
                             statement.setString(1, p.getUniqueId().toString());
                             statement.executeUpdate();
 
-                            player = new UHCPlayer(p.getUniqueId(), 0, 0, 0, 0);
+                            player = new UHCPlayer(p.getUniqueId(), 0, 0, 0, 0, 0);
                             main.getOnlinePlayers().put(p.getUniqueId(), player);
-                            database.closeConnection(conn);
+                            
+                            new BukkitRunnable() {
+                                
+                                public void run() {
+                                    handlePlayerEntrance(player);
+                                }
+                                
+                            }.runTask(main);
                         }
                     } catch (SQLException e) {
                         main.sendConsoleMessage(ChatColor.DARK_RED + "Encountered an error while creating row for new player.");
                         e.printStackTrace();
+                        return;
                     }
                 }else {
                     try {
                         player = new UHCPlayer(p.getUniqueId(), rs.getInt("GAMES_PLAYED"), rs.getInt("GAMES_WON"), rs.getInt("KILLS"),
-                                rs.getInt("DEATHS"));
+                                rs.getInt("DEATHS"), rs.getInt("TOKENS"));
                         main.getOnlinePlayers().put(p.getUniqueId(), player);
+                        
+                        new BukkitRunnable() {
+                            
+                            public void run() {
+                                handlePlayerEntrance(player);
+                            }
+                            
+                        }.runTask(main);
                     } catch (SQLException e) {
                         main.sendConsoleMessage(ChatColor.DARK_RED + "Encountered an error while obtaining row for player.");
                         e.printStackTrace();
+                        return;
                     }
                 }
+                
+                // Let's close the connection that query used.
+                database.closeConnection(query.getConnection());
             }
 
         }.runTaskAsynchronously(main);
-
-        new BukkitRunnable() {
-
-            public void run() {
-                UHCPlayer player = main.getOnlinePlayers().get(p.getUniqueId());
-
-                // Let's let the current state know that a new player has arrived.
-                main.getGameStateManager().getActiveState().onPlayerJoin(player);
-
-                player.prepareForGame();
-                UHCSystem.handleLobbyArrival(main, player);
-            }
-
-        }.runTaskLater(main, 1L);
     }
 
     @EventHandler

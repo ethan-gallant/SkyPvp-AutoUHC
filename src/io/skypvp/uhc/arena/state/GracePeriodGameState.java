@@ -19,8 +19,10 @@ public class GracePeriodGameState extends TimedGameState {
 		}
 
 		main.getGame().activateScenarios();
-		timer = TimerUtils.createTimer(main, "Grace Period", main.getProfile().getGracePeriodLength());
-		UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("gracePeriodBegin"), main.getSettings().getStateUpdateSound());
+		stateMgr.setTimer(TimerUtils.createTimer(main, "Grace Period", 
+		        main.getProfile().getGracePeriodLength()));
+		timer = stateMgr.getTimer();
+		UHCSystem.broadcastMessageAndSound(main.getMessages().getMessage("grace-period-begin"), main.getSettings().getStateUpdateSound());
 		super.onEnter();
 	}
 }

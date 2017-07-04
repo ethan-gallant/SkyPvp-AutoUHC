@@ -3,6 +3,7 @@ package io.skypvp.uhc.command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import io.skypvp.uhc.Messages;
 import io.skypvp.uhc.SkyPVPUHC;
 import io.skypvp.uhc.arena.state.GameStateManager;
 import io.skypvp.uhc.arena.state.LobbyWaitState;
@@ -25,17 +26,18 @@ public class VoteStartCommand extends CommandBase {
 		// This is a safe casting because this method isn't called unless a player is executing this command.
 		// Refer to: PlayerRequirement.java.
 		Player p = (Player) sender;
+		Messages msgs = SkyPVPUHC.get().getMessages();
 		UHCPlayer uhcPlayer = SkyPVPUHC.get().getOnlinePlayers().get(p.getUniqueId());
 
 		if(uhcPlayer != null) {
 			GameStateManager gsm = SkyPVPUHC.get().getGameStateManager();
-			if(gsm.getActiveState() instanceof LobbyWaitState) {
+			if(gsm.getActiveState() instanceof LobbyWaitState && gsm.getForceStartPlayers() == -1) {
 				((LobbyWaitState) gsm.getActiveState()).voteForForceStart(p.getUniqueId());
 			}else {
-				sender.sendMessage(ChatColor.RED + "Force-start voting is not available at this time.");
+				sender.sendMessage(msgs.getMessage("force-start-unavailable"));
 			}
 		}else {
-			sender.sendMessage(ChatColor.RED + "An unexpected error has occurred.");
+			sender.sendMessage(msgs.getMessage("unexpected-error"));
 			throw new NullPointerException("Player tried to vote start while a UHCPlayer instance for them does not exist!");
 		}
 	}

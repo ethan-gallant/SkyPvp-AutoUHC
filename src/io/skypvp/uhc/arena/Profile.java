@@ -233,9 +233,9 @@ public class Profile {
 		return this.owner;
 	}
 
-	/**
-	 * All timings below are in minutes.
-	 */
+    ///////////////////////////////////////////////////////////
+    //           MATCH TIMINGS (MOSTLY IN SECONDS)           //
+    ///////////////////////////////////////////////////////////
 
 	/**
 	 * Sets the length of the Grace Period (in seconds)
@@ -309,6 +309,8 @@ public class Profile {
 	public int getGameplayTime() {
 		return this.gameplayTime;
 	}
+	
+	//////////////////////////////////////////////////
 
 	/**
 	 * Fetches the Scenarios selected for this profile.
@@ -326,6 +328,16 @@ public class Profile {
 
 	public ArrayList<ItemStack> getStartingItems() {
 		return this.startingItems;
+	}
+	
+	/**
+	 * Fetches the minimum needed players to start a match.
+	 * @return int
+	 */
+	
+	public int getMinimumNeededPlayers() {
+	    return (isTeamMatch()) ? main.getSettings().getMinimumTeamGamePlayers() :
+	        main.getSettings().getMinimumSoloGamePlayers();
 	}
 
 	/**

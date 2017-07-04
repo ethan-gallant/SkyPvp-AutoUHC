@@ -1,11 +1,10 @@
 package io.skypvp.uhc.command;
 
-import io.skypvp.uhc.SkyPVPUHC;
-import io.skypvp.uhc.player.UHCPlayer;
-import net.md_5.bungee.api.ChatColor;
-
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+
+import io.skypvp.uhc.SkyPVPUHC;
+import io.skypvp.uhc.player.UHCPlayer;
 
 public class InGameRequirement extends PlayerRequirement {
 
@@ -24,7 +23,7 @@ public class InGameRequirement extends PlayerRequirement {
 	@Override
 	public void onFailed(CommandSender sender) {
 		if(sender instanceof Player) {
-			sender.sendMessage(ChatColor.RED + "You must be in a game to execute that command.");
+			sender.sendMessage(SkyPVPUHC.get().getMessages().getMessage("must-be-in-match"));
 		}else {
 			super.onFailed(sender);
 		}

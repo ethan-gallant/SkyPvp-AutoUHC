@@ -1,5 +1,7 @@
 package io.skypvp.uhc.timer;
 
+import java.util.Iterator;
+
 import org.bukkit.scheduler.BukkitRunnable;
 
 import io.skypvp.uhc.SkyPVPUHC;
@@ -44,12 +46,16 @@ public class MatchTimer extends BukkitRunnable {
 				main.getServer().getPluginManager().callEvent(new UHCMatchTimerExpiredEvent(this));
 			}
 		}
-
-		for(UHCPlayer p : main.getOnlinePlayers().values()) {
-			if(p.getScoreboard() != null) {
-				p.getScoreboard().generate(p);
-				p.setScoreboard(p.getScoreboard());
-			}
+		
+		Iterator<UHCPlayer> iterator = main.getOnlinePlayers().values().iterator();
+		
+		while(iterator.hasNext()) {
+		    UHCPlayer p = iterator.next();
+		    
+		    if(p.getScoreboard() != null) {
+		        p.getScoreboard().generate(p);
+		        p.setScoreboard(p.getScoreboard());
+		    }
 		}
 	}
 

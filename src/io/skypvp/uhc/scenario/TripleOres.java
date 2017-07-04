@@ -59,13 +59,16 @@ public class TripleOres extends DropUpdaterScenario {
 
 	public ArrayList<ItemStack> handleDrops(ArrayList<ItemStack> drops) {
 		Iterator<ItemStack> iterator = drops.iterator();
+		ArrayList<ItemStack> newDrops = new ArrayList<ItemStack>();
+		newDrops.addAll(drops);
 		while(iterator.hasNext()) {
 			ItemStack drop = iterator.next();
-			ItemStack update = new ItemStack(drop.getType(), (drop.getAmount() * 3) - drop.getAmount());
-			drops.add(update);
+			ItemStack update = drop.clone();
+			update.setAmount((update.getAmount() * 3) - drop.getAmount());
+			newDrops.add(update);
 		}
 		
-		return drops;
+		return newDrops;
 	}
 
 }

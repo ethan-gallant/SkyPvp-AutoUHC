@@ -1,14 +1,14 @@
 package io.skypvp.uhc.arena.state;
 
-import io.skypvp.uhc.Globals;
-import io.skypvp.uhc.SkyPVPUHC;
-import io.skypvp.uhc.WorldHandler;
-import io.skypvp.uhc.timer.TimerUtils;
-import net.md_5.bungee.api.ChatColor;
-
 import org.bukkit.entity.Player;
 
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
+
+import io.skypvp.uhc.Globals;
+import io.skypvp.uhc.SkyPVPUHC;
+import io.skypvp.uhc.UHCSystem;
+import io.skypvp.uhc.WorldHandler;
+import net.md_5.bungee.api.ChatColor;
 
 public class SetupGameState extends GameState {
 
@@ -37,14 +37,15 @@ public class SetupGameState extends GameState {
 	}
 
 	public void run() {
+	    // Let's reset some variables
+	    stateMgr.setForceStartPlayers(-1);
+	    stateMgr.setAdminForcedStart(false);
+	    
 		// Let's generate the game world.
 		worldHdl.createGameWorld();
 
 		// Let's reset the game system.
-		main.getGame().reset();
-
-		// Let's setup the lobby timer.
-		stateMgr.setTimer(TimerUtils.createTimer(main, "Starting", main.getSettings().getStartTime()));
+		UHCSystem.reset();
 	}
 
 	/**
